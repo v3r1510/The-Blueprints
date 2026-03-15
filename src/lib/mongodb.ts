@@ -6,15 +6,21 @@ if (!MONGODB_URI) {
   throw new Error("Please define the MONGO_URI environment variable");
 }
 
-// Cached connection for Next.js hot reloads in development
-let cached = (global as any).mongoose as {
+type MongooseCache = {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
 };
 
-if (!cached) {
-  cached = (global as any).mongoose = { conn: null, promise: null };
-}
+type GlobalWithMongoose = typeof globalThis & {
+  mongoose?: MongooseCache;
+};
+
+const globalWithMongoose = globalThis as GlobalWithMongoose;
+
+// Cached connection for Next.js hot reloads in development
+const cached: MongooseCache =
+  globalWithMongoose.mongoose ??
+  (globalWithMongoose.mongoose = { conn: null, promise: null });
 
 export async function connectDB() {
   if (cached.conn) return cached.conn;
