@@ -22,12 +22,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         const isValid = await bcrypt.compare(
           credentials.password as string,
-          user.password
+          user.password,
         );
         if (!isValid) return null;
 
-        // Only return standard fields — custom fields like role are NOT
-        // reliably passed through by Auth.js v5; we fetch them in jwt callback
         return {
           id: user._id.toString(),
           name: user.name,
@@ -38,19 +36,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // Re-fetch from DB if:
-      // 1. First sign-in (user object present), OR
-      // 2. Old token that hasn't been verified yet (no roleVerified flag)
-      // This corrects stale roles without requiring sign-out
       const needsVerification = !!user || !token.roleVerified;
 
       if (needsVerification) {
         const userId = user?.id ?? token.sub;
         if (userId) {
           await connectDB();
-          const dbUser = await User.findById(userId).lean() as { role?: string } | null;
+          const dbUser = (await User.findById(userId).lean()) as {
+            role?: string;
+          } | null;
           token.id = userId;
-          token.role = (dbUser?.role ?? "rider") as "rider" | "operator" | "admin";
+          token.role = (dbUser?.role ?? "rider") as
+            | "rider"
+            | "operator"
+            | "admin";
           token.roleVerified = true;
         }
       }
