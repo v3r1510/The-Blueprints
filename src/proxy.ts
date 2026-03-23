@@ -19,13 +19,15 @@ export default auth((req) => {
     pathname.startsWith("/login") ||
     pathname.startsWith("/register");
 
-  // Not logged in — send to login (except auth pages)
-  if (!isLoggedIn && !isAuthPage) {
+  const isHome = pathname === "/";
+
+  // Not logged in — send to login (except auth pages and home)
+  if (!isLoggedIn && !isAuthPage && !isHome) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // Already logged in — send away from auth pages
-  if (isLoggedIn && isAuthPage) {
+  // Already logged in — send away from auth pages and home
+  if (isLoggedIn && (isAuthPage || isHome)) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -41,6 +43,7 @@ export default auth((req) => {
 
 export const config = {
   matcher: [
+    "/",
     "/dashboard/:path*",
     "/admin/:path*",
     "/operator/:path*",
