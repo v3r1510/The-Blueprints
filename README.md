@@ -1,36 +1,112 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# The Blueprints
+
+Smart Urban Mobility Platform — Greater Montréal Area.
+
+---
 
 ## Getting Started
 
-First, run the development server:
+**1. Clone and install dependencies**
+
+```bash
+git clone <repo-url>
+cd The-Blueprints
+npm install
+```
+
+**2. Set up environment variables**
+
+```bash
+cp .env.example .env.local
+```
+
+Fill in `.env.local`:
+
+```env
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/<dbname>
+AUTH_SECRET=<random-32-char-string>
+```
+
+- `MONGO_URI` — your MongoDB Atlas connection string. Use your own free-tier cluster or ask the Mridul for the shared one.
+- `AUTH_SECRET` — signs the JWT tokens. Generate one with:
+  ```bash
+  openssl rand -base64 32
+  ```
+
+**3. Run the dev server**
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```
+src/
+├── app/
+│   ├── api/
+│   │   ├── auth/[...nextauth]/   # Auth.js handler
+│   │   ├── register/             # POST — create a new user
+│   │   └── users/                # GET — list users (admin only)
+│   ├── dashboard/                # Role-aware dashboard (protected)
+│   ├── login/
+│   ├── register/
+│   └── unauthorized/             # Shown on role violation
+├── components/
+│   └── SessionProvider.tsx
+├── lib/
+│   ├── auth.config.ts            # Edge-safe auth config (used by proxy)
+│   ├── auth.ts                   # Full auth config with DB access
+│   └── mongodb.ts                # Cached Mongoose connection
+├── models/
+│   └── User.ts                   # User schema — name, email, password, role
+├── proxy.ts                      # Route protection middleware
+└── types/
+    └── next-auth.d.ts            # TypeScript extensions for session and JWT
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roles
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Role       | Dashboard              | Protected route |
+| ---------- | ---------------------- | --------------- |
+| `rider`    | Trip and vehicle cards | `/rider/*`      |
+| `operator` | Fleet management cards | `/operator/*`   |
+| `admin`    | Full user table        | `/admin/*`      |
 
-## Deploy on Vercel
+Role is selected at registration, saved in MongoDB, and embedded in the JWT. No manual DB edits needed.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API Reference
+
+| Method | Route                     | Access     | Description                                             |
+| ------ | ------------------------- | ---------- | ------------------------------------------------------- |
+| `POST` | `/api/register`           | Public     | Create a new user                                       |
+| `GET`  | `/api/users`              | Admin only | List users — filter with `?role=rider\|operator\|admin` |
+| `*`    | `/api/auth/[...nextauth]` | —          | Auth.js internal routes                                 |
+
+---
+
+## Scripts
+
+```bash
+npm run dev      # Development server (Turbopack)
+npm run build    # Production build
+npm run start    # Production server
+npm run lint     # ESLint
+```
+
+---
+
+## Notes
+
+- **Never commit `.env.local`** — it is gitignored. Every developer has their own copy.
+- `proxy.ts` is the route protection middleware (renamed from `middleware.ts` due to a Next.js 16 deprecation).
+- Auth uses stateless JWT sessions — no separate session database needed.
+- The Mongoose model calls `deleteModel` on every load — this is intentional to handle hot-reload schema caching in dev.
