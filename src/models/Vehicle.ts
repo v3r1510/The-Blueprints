@@ -11,6 +11,7 @@ export interface IVehicle extends Document {
   };
   state: ResourceState; 
   batteryLevel?: number; //just for display purposes, we can keep or remove 
+  zone: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +46,10 @@ const VehicleSchema: Schema<IVehicle> = new Schema(
       type: Number,
       min: 0,
       max: 100,
+    },
+    zone: {
+      type: String,
+      required: true,
     },
   },
   { timestamps: true },
