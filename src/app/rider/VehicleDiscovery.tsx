@@ -2,21 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { IVehicle } from "@/models/Vehicle";
-
-const getLeftPosition = (lng: number) => {
-  const percent = ((lng - -73.6) / (-73.5 - -73.6)) * 100;
-  return Math.max(5, Math.min(95, percent));
-};
-
-const getTopPosition = (lat: number) => {
-  const percent = 100 - ((lat - 45.49) / (45.54 - 45.49)) * 100;
-  return Math.max(5, Math.min(95, percent));
-};
+import MobilityMap from "./MobilityMap";
+import ReservationModal from "./ReservationModal";
 
 interface StationStatus {
   name: string;
   available: number;
   total: number;
+}
+
+interface ActiveTrip {
+  vehicle: IVehicle;
+  startTime: number;
+  endTime?: number;
+  tripId: string;
 }
 
 export default function VehicleDiscovery() {
@@ -27,6 +26,9 @@ export default function VehicleDiscovery() {
 
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [isReserving, setIsReserving] = useState(false);
+
+  const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
 
   useEffect(() => {
@@ -45,7 +47,26 @@ export default function VehicleDiscovery() {
       });
   }, []);
 
-  //Aggregate station status from vehicles
+  //Active Trip Timer
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (activeTrip && !activeTrip.endTime) {
+      interval = setInterval(() => {
+        const seconds = Math.floor((Date.now() - activeTrip.startTime) / 1000);
+        setElapsedTime(seconds);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [activeTrip]);
+
+  const formatTime = (totalSeconds: number) => {
+    const m = Math.floor(totalSeconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (totalSeconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
   const stations = vehicles.reduce<Record<string, StationStatus>>(
     (acc, vehicle) => {
       const zone = vehicle.zone || "Unknown";
@@ -57,12 +78,10 @@ export default function VehicleDiscovery() {
     {},
   );
 
-  const displayedVehicles = filter === "All" ? vehicles : vehicles.filter((v) => v.type === filter);
+  const displayedVehicles =
+    filter === "All" ? vehicles : vehicles.filter((v) => v.type === filter);
 
-  const handleReserveClick = () => {
-    setShowConfirmModal(true);
-  };
-
+  //reservation handler
   const executeReservation = async () => {
     if (!selectedVehicle) return;
     setIsReserving(true);
@@ -77,12 +96,16 @@ export default function VehicleDiscovery() {
       const data = await res.json();
 
       if (res.ok) {
-        alert("Success! " + data.message);
         setVehicles((prev) =>
           prev.filter((v) => v._id !== selectedVehicle._id),
         );
+        setActiveTrip({
+          vehicle: selectedVehicle,
+          startTime: Date.now(),
+          tripId: data.trip._id,
+        });
         setSelectedVehicle(null);
-        setShowConfirmModal(false); // Close modal on success
+        setShowConfirmModal(false);
       } else {
         alert("Error: " + data.error);
       }
@@ -100,116 +123,96 @@ export default function VehicleDiscovery() {
       </div>
     );
 
-    const getPricingDetails = (type: string) => {
-      switch (type) {
-        case "Scooter":
-          return { rate: 0.15, unit: "min", strategy: "PerMinute" };
-        case "Bike":
-          return { rate: 3.0, unit: "hour", strategy: "PerHour" };
-        case "Car":
-          return { rate: 0.45, unit: "min", strategy: "PerMinute" };
-        default:
-          return { rate: 0.0, unit: "min", strategy: "FlatRate" };
-      }
-    };
-
-    const pricing = selectedVehicle
-      ? getPricingDetails(selectedVehicle.type)
-      : null;
-
   return (
     <div className="flex flex-col lg:flex-row gap-6 animate-in fade-in duration-700">
-      {/* LEFT: Map (The Observer) [cite: 44] */}
-      <div className="flex-1 min-h-125 rounded-xl border border-white/10 bg-white/5 relative p-6 overflow-hidden">
-        {/* ADDED: The Header with Filter Chips */}
-        <div className="flex justify-between items-center mb-6 relative z-10">
-          <h2 className="text-white/70 text-[10px] uppercase tracking-widest">
-            City Mobility Map
-          </h2>
-          <div className="flex gap-2">
-            {["All", "Car", "Bike", "Scooter"].map((f) => (
-              <button
-                key={f}
-                onClick={() => {
-                  setFilter(f);
-                  setSelectedVehicle(null); // Clear selection when filtering
-                }}
-                className={`px-3 py-1 rounded-full border text-[10px] transition-colors ${
-                  filter === f
-                    ? "border-violet-500 bg-violet-500/20 text-white"
-                    : "border-white/10 text-white/60 hover:border-violet-500/50"
-                }`}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* LEFT: Render the Map Component */}
+      <MobilityMap
+        vehicles={displayedVehicles}
+        selectedVehicle={selectedVehicle}
+        onSelectVehicle={setSelectedVehicle}
+        filter={filter}
+        onFilterChange={setFilter}
+      />
 
-        <div
-          className="absolute inset-0 top-16 opacity-5 pointer-events-none"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle, #fff 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-
-        {displayedVehicles.map((v, i) => (
-          <button
-            key={v._id.toString()}
-            onClick={() => setSelectedVehicle(v)}
-            className={`absolute w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110 z-20 ${
-              selectedVehicle?._id === v._id
-                ? "ring-2 ring-violet-500 bg-white/10"
-                : ""
-            }`}
-            style={{
-              top: `${getTopPosition(v.location.coordinates[1])}%`,
-              left: `${getLeftPosition(v.location.coordinates[0])}%`,
-            }}
-          >
-            <div
-              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm shadow-xl ${v.state === "Available" ? "bg-emerald-500 shadow-emerald-500/20" : "bg-red-500/50"}`}
-            >
-              {v.type === "Car" ? "🚗" : v.type === "Bike" ? "🚲" : "🛴"}
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* RIGHT: Status & Details */}
+      {/* RIGHT: Status & Details Sidebar */}
       <div className="w-full lg:w-80 flex flex-col gap-6">
-        {/* Station List */}
-        <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-          <h2 className="text-white/70 text-[10px] uppercase tracking-widest mb-6">
-            Station Status
-          </h2>
-          <div className="space-y-6">
-            {Object.values(stations).map((s) => (
-              <div key={s.name} className="group">
-                <div className="flex justify-between text-[11px] mb-2">
-                  <span className="text-white/50 group-hover:text-white transition-colors">
-                    {s.name}
-                  </span>
-                  <span className="text-emerald-400 font-mono">
-                    {s.available}/{s.total}
-                  </span>
-                </div>
-                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-emerald-500 transition-all duration-1000"
-                    style={{ width: `${(s.available / s.total) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+        {activeTrip ? (
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 animate-in slide-in-from-right-4 duration-500 relative overflow-hidden">
+            <div className="absolute top-6 right-6 flex items-center gap-2">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-[9px] uppercase tracking-widest text-emerald-400 font-bold">
+                In Transit
+              </span>
+            </div>
+
+            <p className="text-emerald-300 text-[10px] uppercase font-bold mb-2 tracking-tighter">
+              Current Rental
+            </p>
+            <h3 className="text-white font-bold text-xl mb-1">
+              {activeTrip.vehicle.type}
+            </h3>
+            <p className="text-white/40 text-[11px] mb-6">
+              {activeTrip.vehicle.zone}
+            </p>
+
+            <div className="bg-black/40 rounded-lg p-4 mb-6 border border-white/5 flex flex-col items-center justify-center">
+              <span className="text-white/50 text-[10px] uppercase tracking-widest mb-1">
+                Elapsed Time
+              </span>
+              <span className="text-3xl font-mono text-white tracking-wider">
+                {formatTime(elapsedTime)}
+              </span>
+            </div>
+
+            <button
+              onClick={() => {
+                setActiveTrip((prev) =>
+                  prev ? { ...prev, endTime: Date.now() } : null,
+                );
+                alert("need to implement rental completion API call here");
+              }}
+              disabled={!!activeTrip.endTime}
+              className={`w-full py-3 rounded-lg border text-[11px] font-bold transition-all shadow-lg uppercase tracking-widest ${
+                activeTrip.endTime
+                  ? "bg-gray-500/10 border-gray-500/50 text-gray-400 cursor-not-allowed"
+                  : "bg-red-500/10 border-red-500/50 text-red-400 hover:bg-red-500 hover:text-white"
+              }`}
+            >
+              {activeTrip.endTime ? "Rental Ended" : "End Rental"}
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-white/70 text-[10px] uppercase tracking-widest mb-6">
+              Station Status
+            </h2>
+            <div className="space-y-6">
+              {Object.values(stations).map((s) => (
+                <div key={s.name} className="group">
+                  <div className="flex justify-between text-[11px] mb-2">
+                    <span className="text-white/50 group-hover:text-white transition-colors">
+                      {s.name}
+                    </span>
+                    <span className="text-emerald-400 font-mono">
+                      {s.available}/{s.total}
+                    </span>
+                  </div>
+                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-emerald-500 transition-all duration-1000"
+                      style={{ width: `${(s.available / s.total) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* Selected Ride Detail [cite: 196] */}
-
-        {selectedVehicle && (
+        {selectedVehicle && !activeTrip && (
           <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-6 animate-in slide-in-from-right-4 duration-500">
             <p className="text-violet-300 text-[10px] uppercase font-bold mb-2 tracking-tighter">
               Selected Ride
@@ -234,7 +237,7 @@ export default function VehicleDiscovery() {
             </div>
 
             <button
-              onClick={handleReserveClick}
+              onClick={() => setShowConfirmModal(true)}
               disabled={isReserving}
               className="w-full py-3 rounded-lg bg-violet-600 text-white text-[11px] font-bold hover:bg-violet-500 transition-all shadow-lg shadow-violet-500/20 uppercase tracking-widest"
             >
@@ -244,61 +247,14 @@ export default function VehicleDiscovery() {
         )}
       </div>
 
-      {/* --- CONFIRMATION MODAL OVERLAY --- */}
-      {showConfirmModal && selectedVehicle && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-[#0f0f13] border border-white/10 rounded-2xl w-full max-w-sm p-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <h3 className="text-white font-bold text-lg mb-1">
-              Confirm Reservation
-            </h3>
-            <p className="text-white/50 text-xs mb-6">
-              Review your mobility details.
-            </p>
-
-            <div className="space-y-3 mb-8 bg-white/5 p-4 rounded-xl border border-white/5">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">Vehicle</span>
-                <span className="text-white font-medium">
-                  {selectedVehicle.type}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/50">Location</span>
-                <span className="text-white font-medium">
-                  {selectedVehicle.zone}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm pt-3 border-t border-white/10">
-                <span className="text-white/50">Rate</span>
-                <span className="text-emerald-400 font-mono">
-                  ${pricing?.rate.toFixed(2)} / {pricing?.unit}
-                </span>
-              </div>
-              <div className="flex justify-between text-xs pt-1">
-                <span className="text-white/40">Pre-authorization Hold</span>
-                <span className="text-white/60">$10.00</span>
-              </div>
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                disabled={isReserving}
-                className="flex-1 py-3 rounded-lg border border-white/10 text-white/70 text-xs font-bold hover:bg-white/5 transition-all disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={executeReservation}
-                disabled={isReserving}
-                className="flex-1 py-3 rounded-lg bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50"
-              >
-                {isReserving ? "Processing..." : "Confirm & Pay"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Render the Modal Component */}
+      <ReservationModal
+        isOpen={showConfirmModal}
+        vehicle={selectedVehicle}
+        isReserving={isReserving}
+        onClose={() => setShowConfirmModal(false)}
+        onConfirm={executeReservation}
+      />
     </div>
   );
 }
