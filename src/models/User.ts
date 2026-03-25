@@ -7,6 +7,7 @@ export interface IUser extends Document {
   email: string;
   password: string;
   role: UserRole;
+  balance: number;
   preferredMobilityType?: string; // rider-specific
   createdAt: Date;
 }
@@ -17,6 +18,7 @@ const UserSchema = new Schema<IUser>(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true },
     role: { type: String, enum: ["rider", "operator", "admin"], required: true, default: "rider" },
+    balance: { type: Number, default: 0, min: 0 },
     preferredMobilityType: { type: String, trim: true },
   },
   { timestamps: true }

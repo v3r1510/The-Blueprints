@@ -52,6 +52,10 @@ const TripSchema: Schema<ITrip> = new Schema(
 );
 
 
+if (mongoose.models.Trip) {
+  mongoose.deleteModel("Trip");
+}
+
 const Trip: Model<ITrip> = mongoose.model<ITrip>("Trip", TripSchema);
 
 export default Trip;

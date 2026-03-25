@@ -24,6 +24,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const existingTrip = await Trip.findOne({
+      userId: session.user.id,
+      status: { $in: ["Reserved", "Active"] },
+    });
+    if (existingTrip) {
+      return NextResponse.json(
+        { error: "You already have an active rental. End it before reserving another vehicle." },
+        { status: 409 },
+      );
+    }
+
     const vehicle = await Vehicle.findById(vehicleId);
     if (!vehicle) {
       return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
@@ -36,8 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    //assuming session.user.id exists. ELSE session.user.email
-    const hasFunds = paymentSystem.verifyBalance(session.user.id as string);
+    const hasFunds = await paymentSystem.verifyBalance(session.user.id as string);
     if (!hasFunds) {
       return NextResponse.json(
         { error: "Insufficient balance to reserve this vehicle" },
