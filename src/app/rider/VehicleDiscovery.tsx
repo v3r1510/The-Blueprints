@@ -103,6 +103,28 @@ export default function VehicleDiscovery() {
     return `${m}:${s}`;
   };
 
+  const getRunningCost = () => {
+    if (!activeTrip) return 0;
+    const type = activeTrip.vehicle.type;
+    const minutes = Math.max(1, Math.ceil(elapsedTime / 60));
+    switch (type) {
+      case "Scooter": return Math.round(minutes * 0.15 * 100) / 100;
+      case "Car": return Math.round(minutes * 0.45 * 100) / 100;
+      case "Bike": return Math.max(1, Math.ceil(minutes / 60)) * 3.0;
+      default: return 0;
+    }
+  };
+
+  const refreshVehicles = () => {
+    fetch("/api/vehicles", { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => setVehicles(data))
+      .catch((err) => console.error("Vehicle refresh failed:", err));
+  };
+
   const endRental = async () => {
     if (!activeTrip || isEndingRental) return;
     setIsEndingRental(true);
@@ -249,12 +271,15 @@ export default function VehicleDiscovery() {
             </p>
 
             {!activeTrip.endTime && (
-              <div className="bg-black/40 rounded-lg p-4 mb-6 border border-white/5 flex flex-col items-center justify-center">
-                <span className="text-white/50 text-[10px] uppercase tracking-widest mb-1">
+              <div className="bg-black/40 rounded-lg p-4 mb-6 border border-white/5 flex flex-col items-center justify-center gap-2">
+                <span className="text-white/50 text-[10px] uppercase tracking-widest">
                   Elapsed Time
                 </span>
                 <span className="text-3xl font-mono text-white tracking-wider">
                   {formatTime(elapsedTime)}
+                </span>
+                <span className="text-emerald-400 font-mono text-lg font-bold">
+                  ${getRunningCost().toFixed(2)}
                 </span>
               </div>
             )}
@@ -293,7 +318,10 @@ export default function VehicleDiscovery() {
 
             {activeTrip.endTime ? (
               <button
-                onClick={() => setActiveTrip(null)}
+                onClick={() => {
+                  refreshVehicles();
+                  setActiveTrip(null);
+                }}
                 className="w-full py-3 rounded-lg border border-white/10 text-white/70 text-[11px] font-bold hover:bg-white/5 transition-all uppercase tracking-widest"
               >
                 Dismiss
