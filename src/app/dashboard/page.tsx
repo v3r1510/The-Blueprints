@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import VehicleDiscovery from "../rider/VehicleDiscovery";
+import AdminAnalytics from "@/components/admin/AdminAnalytics"; // ← new
 
 interface UserRow {
   _id: string;
@@ -61,40 +62,40 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-        {/* Background orbs */}
-        <div
-          className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
+      {/* Background orbs */}
+      <div
+        className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
           style={{
             background: "radial-gradient(circle, #6366f1 0%, transparent 70%)",
           }}
-        />
-        <div
-          className="animate-float-b pointer-events-none absolute -bottom-40 -right-24 w-150 h-150 rounded-full opacity-10"
+      />
+      <div
+        className="animate-float-b pointer-events-none absolute -bottom-40 -right-24 w-150 h-150 rounded-full opacity-10"
           style={{
             background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
           }}
-        />
+      />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-6 py-10">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-10">
-            <div>
-              <p className="text-white/40 text-xs uppercase tracking-widest mb-1">
-                Rent a Vehicle
-              </p>
-              <h1 className="text-2xl font-bold text-white">
-                Welcome back, {session?.user?.name?.split(" ")[0] ?? "there"}
-              </h1>
-            </div>
-            {isAdmin && (
-              <Link
-                href="/register"
-                className="btn-shimmer px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-[1.02]"
-              >
-                + Add User
-              </Link>
-            )}
+      <div className="relative z-10 max-w-5xl mx-auto px-6 py-10">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <p className="text-white/40 text-xs uppercase tracking-widest mb-1">
+              Rent a Vehicle
+            </p>
+            <h1 className="text-2xl font-bold text-white">
+              Welcome back, {session?.user?.name?.split(" ")[0] ?? "there"}
+            </h1>
           </div>
+          {isAdmin && (
+            <Link
+              href="/register"
+              className="btn-shimmer px-4 py-2 rounded-lg text-xs font-semibold text-white transition-all hover:scale-[1.02]"
+            >
+              + Add User
+            </Link>
+          )}
+        </div>
 
         {/* Role card */}
         <div className="mb-8 rounded-xl border border-white/10 bg-white/5 p-6 flex items-center gap-5">
@@ -117,9 +118,11 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Admin: user management table */}
+        {/* Admin: analytics + user management table */}
         {isAdmin && (
           <div>
+            {/* ── Observer-powered analytics cards ── */}
+            <AdminAnalytics />
             <h2 className="text-white/70 text-xs uppercase tracking-widest mb-4">
               All Users
             </h2>
@@ -209,7 +212,7 @@ export default function DashboardPage() {
 
         {/* Rider placeholder */}
         {role === "rider" && <VehicleDiscovery />}
-        </div>
+      </div>
     </AppShell>
   );
 }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Vehicle from "@/models/Vehicle";
+import Trip from "@/models/Trip";
 
 // Helper to generate slightly scattered coordinates around a central station point
 const scatter = (coord: number, variance = 0.002) => {
@@ -11,8 +12,10 @@ export async function GET() {
   try {
     await connectDB();
 
-    // Clear the database before seeding to avoid duplicates
+    // Clear both collections — stale "Reserved" trips are the root cause
+    // of inflated active-rental counts across test sessions.
     await Vehicle.deleteMany({});
+    await Trip.deleteMany({});
 
     // Central coordinates for the stations
     const stations = {
@@ -324,7 +327,7 @@ export async function GET() {
     await Vehicle.insertMany(vehicles);
 
     return NextResponse.json({
-      message: "Success! 25 vehicles added to your DB.",
+      message: "Success! 25 vehicles added and all trips cleared.",
       count: vehicles.length,
     });
   } catch (_err) {
