@@ -1,13 +1,10 @@
 "use client";
 
-import SideNav from "@/components/SideNav";
+import AppShell from "@/components/AppShell";
 
 export default function TransitPage() {
   return (
-    <div className="flex min-h-screen bg-[#09090b]">
-      <SideNav />
-      <main className="flex-1 ml-56">
-        <div className="relative overflow-hidden">
+    <AppShell>
           <div
             className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
             style={{ background: "radial-gradient(circle, #6366f1 0%, transparent 70%)" }}
@@ -38,8 +35,6 @@ export default function TransitPage() {
               </p>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import SideNav from "@/components/SideNav";
+import AppShell from "@/components/AppShell";
 import VehicleDiscovery from "../rider/VehicleDiscovery";
 
 interface UserRow {
@@ -60,9 +60,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-[#09090b]">
-      <SideNav />
-      <main className="flex-1 ml-56 relative overflow-hidden">
+    <AppShell>
         {/* Background orbs */}
         <div
           className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
@@ -212,7 +210,6 @@ export default function DashboardPage() {
         {/* Rider placeholder */}
         {role === "rider" && <VehicleDiscovery />}
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }

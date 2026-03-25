@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import SideNav from "@/components/SideNav";
+import AppShell from "@/components/AppShell";
 
 const FUND_OPTIONS = [
   { label: "$10", priceEnvKey: "STRIPE_PRICE_10", priceId: "" },
@@ -73,9 +73,7 @@ export default function ProfilePage() {
   const role = session?.user?.role ?? "rider";
 
   return (
-    <div className="flex min-h-screen bg-[#09090b]">
-      <SideNav />
-      <main className="flex-1 ml-56 relative overflow-hidden">
+    <AppShell>
         <div
           className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
           style={{
@@ -176,7 +174,6 @@ export default function ProfilePage() {
           </p>
           </div>
         </div>
-      </main>
-    </div>
+    </AppShell>
   );
 }
