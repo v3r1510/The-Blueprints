@@ -58,17 +58,27 @@ export default function VehicleDiscovery() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/vehicles", { credentials: "include" })
-      .then((res) => {
+    Promise.all([
+      fetch("/api/vehicles", { credentials: "include" }).then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
-      })
-      .then((data) => {
-        setVehicles(data);
+      }),
+      fetch("/api/reservations/active").then((res) => res.json()),
+    ])
+      .then(([vehicleData, activeTripData]) => {
+        setVehicles(vehicleData);
+        if (activeTripData.activeTrip?.vehicle) {
+          const { tripId, startTime, vehicle } = activeTripData.activeTrip;
+          setActiveTrip({
+            tripId,
+            startTime: new Date(startTime).getTime(),
+            vehicle,
+          });
+        }
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Vehicles fetch failed:", err);
+        console.error("Initial data fetch failed:", err);
         setLoading(false);
       });
   }, []);
@@ -183,6 +193,9 @@ export default function VehicleDiscovery() {
           "Insufficient balance. Minimum $10.00 required to reserve.",
           { label: "Add Funds", href: "/profile" },
         );
+      } else if (res.status === 409) {
+        setShowConfirmModal(false);
+        showToast("warning", data.error || "You already have an active rental.");
       } else {
         showToast("error", data.error || "Reservation failed");
       }

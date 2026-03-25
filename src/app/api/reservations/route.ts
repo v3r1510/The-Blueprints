@@ -24,6 +24,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const existingTrip = await Trip.findOne({
+      userId: session.user.id,
+      status: { $in: ["Reserved", "Active"] },
+    });
+    if (existingTrip) {
+      return NextResponse.json(
+        { error: "You already have an active rental. End it before reserving another vehicle." },
+        { status: 409 },
+      );
+    }
+
     const vehicle = await Vehicle.findById(vehicleId);
     if (!vehicle) {
       return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
