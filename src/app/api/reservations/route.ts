@@ -36,8 +36,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    //assuming session.user.id exists. ELSE session.user.email
-    const hasFunds = paymentSystem.verifyBalance(session.user.id as string);
+    const hasFunds = await paymentSystem.verifyBalance(session.user.id as string);
     if (!hasFunds) {
       return NextResponse.json(
         { error: "Insufficient balance to reserve this vehicle" },

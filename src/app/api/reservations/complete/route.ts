@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
       endTime,
     );
 
-    const debit = paymentSystem.debitAccount(session.user.id as string, fare);
+    const debit = await paymentSystem.debitAccount(session.user.id as string, fare);
 
     trip.endTime = endTime;
     trip.totalFare = fare;

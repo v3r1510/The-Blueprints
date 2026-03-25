@@ -1,3 +1,6 @@
+import { connectDB } from "@/lib/mongodb";
+import User from "@/models/User";
+
 type VehicleType = "Car" | "Bike" | "Scooter";
 type PricingStrategy = "PerMinute" | "PerHour" | "FlatRate";
 
@@ -15,7 +18,6 @@ const PRICING_RATES: Record<VehicleType, PricingRate> = {
 
 class PaymentSystem {
   private static instance: PaymentSystem;
-  private mockUserBalance: number = 50.0; //simulated $50 starting balance
 
   private constructor() {}
 
@@ -26,12 +28,17 @@ class PaymentSystem {
     return PaymentSystem.instance;
   }
 
-  public verifyBalance(userId: string): boolean {
-    return this.mockUserBalance >= 10.0;
+  public async verifyBalance(userId: string): Promise<boolean> {
+    await connectDB();
+    const user = await User.findById(userId).select("balance");
+    if (!user) return false;
+    return user.balance >= 10.0;
   }
 
-  public getBalance(): number {
-    return this.mockUserBalance;
+  public async getBalance(userId: string): Promise<number> {
+    await connectDB();
+    const user = await User.findById(userId).select("balance");
+    return user?.balance ?? 0;
   }
 
   public getPricingRate(vehicleType: string): PricingRate {
@@ -68,18 +75,24 @@ class PaymentSystem {
     return { fare, durationMinutes, rate: pricing.rate, unit: pricing.unit };
   }
 
-  public debitAccount(userId: string, amount: number): { success: boolean; remaining: number } {
-    if (this.mockUserBalance < amount) {
-      console.log(`[PAYMENT] Insufficient balance. Has $${this.mockUserBalance.toFixed(2)}, needs $${amount.toFixed(2)}`);
-      return { success: false, remaining: this.mockUserBalance };
+  public async debitAccount(userId: string, amount: number): Promise<{ success: boolean; remaining: number }> {
+    await connectDB();
+    const user = await User.findById(userId).select("balance");
+    if (!user || user.balance < amount) {
+      console.log(`[PAYMENT] Insufficient balance for user ${userId}`);
+      return { success: false, remaining: user?.balance ?? 0 };
     }
-    this.mockUserBalance -= amount;
-    console.log(
-      `[PAYMENT] Debited $${amount.toFixed(2)}. Remaining: $${this.mockUserBalance.toFixed(2)}`,
+
+    const updated = await User.findByIdAndUpdate(
+      userId,
+      { $inc: { balance: -amount } },
+      { new: true },
     );
-    return { success: true, remaining: this.mockUserBalance };
+
+    const remaining = updated?.balance ?? 0;
+    console.log(`[PAYMENT] Debited $${amount.toFixed(2)} from user ${userId}. Remaining: $${remaining.toFixed(2)}`);
+    return { success: true, remaining };
   }
 }
 
-//single instance
 export const paymentSystem = PaymentSystem.getInstance();
