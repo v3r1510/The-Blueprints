@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import SideNav from "@/components/SideNav";
 
 const FUND_OPTIONS = [
   { label: "$10", priceEnvKey: "STRIPE_PRICE_10", priceId: "" },
@@ -73,35 +73,29 @@ export default function ProfilePage() {
   const role = session?.user?.role ?? "rider";
 
   return (
-    <main className="relative min-h-screen bg-[#09090b] overflow-hidden">
-      <div
-        className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
-        style={{
-          background: "radial-gradient(circle, #6366f1 0%, transparent 70%)",
-        }}
-      />
-      <div
-        className="animate-float-b pointer-events-none absolute -bottom-40 -right-24 w-150 h-150 rounded-full opacity-10"
-        style={{
-          background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
-        }}
-      />
+    <div className="flex min-h-screen bg-[#09090b]">
+      <SideNav />
+      <main className="flex-1 ml-56 relative overflow-hidden">
+        <div
+          className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
+          style={{
+            background: "radial-gradient(circle, #6366f1 0%, transparent 70%)",
+          }}
+        />
+        <div
+          className="animate-float-b pointer-events-none absolute -bottom-40 -right-24 w-150 h-150 rounded-full opacity-10"
+          style={{
+            background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
+          }}
+        />
 
-      <div className="relative z-10 max-w-xl mx-auto px-6 py-10">
-        <div className="flex items-center justify-between mb-10">
-          <div>
+        <div className="relative z-10 max-w-xl mx-auto px-6 py-10">
+          <div className="mb-10">
             <p className="text-white/40 text-xs uppercase tracking-widest mb-1">
-              The Blueprints
+              Account
             </p>
             <h1 className="text-2xl font-bold text-white">Profile</h1>
           </div>
-          <Link
-            href="/dashboard"
-            className="px-4 py-2 rounded-lg text-xs font-semibold text-white/60 border border-white/10 hover:border-white/20 hover:text-white/90 transition-all"
-          >
-            Back to Dashboard
-          </Link>
-        </div>
 
         {success && (
           <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 animate-in fade-in duration-300">
@@ -180,8 +174,9 @@ export default function ProfilePage() {
           <p className="text-white/30 text-[10px] mt-3 text-center">
             Securely processed by Stripe
           </p>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
