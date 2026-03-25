@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { IVehicle } from "@/models/Vehicle";
+import Link from "next/link";
 import MobilityMap from "./MobilityMap";
 import ReservationModal from "./ReservationModal";
 
@@ -19,6 +20,13 @@ interface TripReceipt {
   unit: string;
   totalFare: number;
   balanceRemaining: number;
+}
+
+interface Toast {
+  id: number;
+  type: "error" | "success" | "warning";
+  message: string;
+  action?: { label: string; href: string };
 }
 
 interface ActiveTrip {
@@ -41,7 +49,13 @@ export default function VehicleDiscovery() {
   const [activeTrip, setActiveTrip] = useState<ActiveTrip | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isEndingRental, setIsEndingRental] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
+  const showToast = useCallback((type: Toast["type"], message: string, action?: Toast["action"]) => {
+    const id = Date.now();
+    setToasts((prev) => [...prev, { id, type, message, action }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
+  }, []);
 
   useEffect(() => {
     fetch("/api/vehicles", { credentials: "include" })
@@ -97,10 +111,10 @@ export default function VehicleDiscovery() {
           prev ? { ...prev, endTime: Date.now(), receipt: data.receipt } : null,
         );
       } else {
-        alert("Error ending rental: " + data.error);
+        showToast("error", data.error || "Failed to end rental");
       }
     } catch {
-      alert("Something went wrong ending the rental.");
+      showToast("error", "Something went wrong ending the rental.");
     } finally {
       setIsEndingRental(false);
     }
@@ -156,11 +170,18 @@ export default function VehicleDiscovery() {
         });
         setSelectedVehicle(null);
         setShowConfirmModal(false);
+      } else if (res.status === 402) {
+        setShowConfirmModal(false);
+        showToast(
+          "warning",
+          "Insufficient balance. Minimum $10.00 required to reserve.",
+          { label: "Add Funds", href: "/profile" },
+        );
       } else {
-        alert("Error: " + data.error);
+        showToast("error", data.error || "Reservation failed");
       }
-    } catch (error) {
-      alert("Something went wrong with the reservation.");
+    } catch {
+      showToast("error", "Something went wrong with the reservation.");
     } finally {
       setIsReserving(false);
     }
@@ -339,6 +360,33 @@ export default function VehicleDiscovery() {
         onClose={() => setShowConfirmModal(false)}
         onConfirm={executeReservation}
       />
+
+      {/* Toast notifications */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3 pointer-events-none">
+        {toasts.map((toast) => {
+          const styles = {
+            error: "border-red-500/40 bg-red-500/10 text-red-400",
+            warning: "border-amber-500/40 bg-amber-500/10 text-amber-400",
+            success: "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+          };
+          return (
+            <div
+              key={toast.id}
+              className={`pointer-events-auto rounded-xl border backdrop-blur-md px-5 py-4 shadow-2xl animate-in slide-in-from-right-4 fade-in duration-300 max-w-sm ${styles[toast.type]}`}
+            >
+              <p className="text-sm font-semibold">{toast.message}</p>
+              {toast.action && (
+                <Link
+                  href={toast.action.href}
+                  className="mt-2 inline-block text-xs font-bold underline underline-offset-2 hover:no-underline transition-all"
+                >
+                  {toast.action.label} &rarr;
+                </Link>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
