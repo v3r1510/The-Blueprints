@@ -54,6 +54,17 @@ export async function POST(req: NextRequest) {
 
     const debit = await paymentSystem.debitAccount(session.user.id as string, fare);
 
+    if (!debit.success) {
+      return NextResponse.json(
+        {
+          error: "Insufficient balance to complete this rental",
+          fare,
+          balanceRemaining: debit.remaining,
+        },
+        { status: 402 },
+      );
+    }
+
     trip.endTime = endTime;
     trip.totalFare = fare;
     trip.status = "Completed";

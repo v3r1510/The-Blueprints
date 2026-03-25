@@ -42,7 +42,13 @@ class PaymentSystem {
   }
 
   public getPricingRate(vehicleType: string): PricingRate {
-    return PRICING_RATES[vehicleType as VehicleType] ?? { rate: 0, unit: "min", strategy: "FlatRate" };
+    return (
+      PRICING_RATES[vehicleType as VehicleType] ?? {
+        rate: 0,
+        unit: "min",
+        strategy: "FlatRate",
+      }
+    );
   }
 
   public calculateFare(
@@ -75,7 +81,10 @@ class PaymentSystem {
     return { fare, durationMinutes, rate: pricing.rate, unit: pricing.unit };
   }
 
-  public async debitAccount(userId: string, amount: number): Promise<{ success: boolean; remaining: number }> {
+  public async debitAccount(
+    userId: string,
+    amount: number,
+  ): Promise<{ success: boolean; remaining: number }> {
     await connectDB();
     const user = await User.findById(userId).select("balance");
     if (!user || user.balance < amount) {
@@ -90,7 +99,9 @@ class PaymentSystem {
     );
 
     const remaining = updated?.balance ?? 0;
-    console.log(`[PAYMENT] Debited $${amount.toFixed(2)} from user ${userId}. Remaining: $${remaining.toFixed(2)}`);
+    console.log(
+      `[PAYMENT] Debited $${amount.toFixed(2)} from user ${userId}. Remaining: $${remaining.toFixed(2)}`,
+    );
     return { success: true, remaining };
   }
 }

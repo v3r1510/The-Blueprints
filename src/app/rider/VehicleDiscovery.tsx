@@ -110,6 +110,12 @@ export default function VehicleDiscovery() {
         setActiveTrip((prev) =>
           prev ? { ...prev, endTime: Date.now(), receipt: data.receipt } : null,
         );
+      } else if (res.status === 402) {
+        showToast(
+          "warning",
+          `Insufficient balance. Fare is $${data.fare?.toFixed(2) ?? "?"}, but you only have $${data.balanceRemaining?.toFixed(2) ?? "?"}. Add funds to end your rental.`,
+          { label: "Add Funds", href: "/profile" },
+        );
       } else {
         showToast("error", data.error || "Failed to end rental");
       }
