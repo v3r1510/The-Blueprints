@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, createContext, useContext } from "react";
+import { useState, useEffect, createContext, useContext } from "react";
 import { useSession, signOut } from "next-auth/react";
 
 const SideNavContext = createContext<{ collapsed: boolean; toggle: () => void }>({
@@ -81,7 +81,17 @@ function NavLink({ href, icon, label, active, collapsed }: { href: string; icon:
 }
 
 export function SideNavProvider({ children }: { children: React.ReactNode }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sidenavCollapsed") === "true";
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    localStorage.setItem("sidenavCollapsed", String(collapsed));
+  }, [collapsed]);
+
   return (
     <SideNavContext.Provider value={{ collapsed, toggle: () => setCollapsed((c) => !c) }}>
       {children}
