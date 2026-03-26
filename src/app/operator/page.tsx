@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { FormEvent, useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 
@@ -18,6 +19,18 @@ interface VehicleRow {
   };
 }
 
+interface StationSummary {
+  name: string;
+  total: number;
+  available: number;
+  creatableTypes: VehicleType[];
+  byType: Array<{
+    type: VehicleType;
+    total: number;
+    available: number;
+  }>;
+}
+
 const VEHICLE_TYPES: VehicleType[] = ["Car", "Bike", "Scooter"];
 const VEHICLE_STATES: VehicleState[] = [
   "Available",
@@ -26,8 +39,18 @@ const VEHICLE_STATES: VehicleState[] = [
   "Maintenance",
 ];
 
+const LeafletLocationPicker = dynamic(() => import("./LeafletLocationPicker"), {
+  ssr: false,
+  loading: () => (
+    <div className="absolute inset-0 grid place-items-center text-sm text-white/50 bg-black/40">
+      Loading map...
+    </div>
+  ),
+});
+
 export default function OperatorPage() {
   const [vehicles, setVehicles] = useState<VehicleRow[]>([]);
+  const [stations, setStations] = useState<StationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -45,16 +68,48 @@ export default function OperatorPage() {
     Record<string, { zone: string; batteryLevel: string; state: VehicleState }>
   >({});
 
+  const currentLat = Number(createForm.lat);
+  const currentLng = Number(createForm.lng);
+  const markerLat = Number.isFinite(currentLat) ? currentLat : 45.5089;
+  const markerLng = Number.isFinite(currentLng) ? currentLng : -73.5617;
+
+  const handleMapSelect = (lat: number, lng: number) => {
+    setCreateForm((prev) => ({
+      ...prev,
+      lat: lat.toFixed(6),
+      lng: lng.toFixed(6),
+    }));
+  };
+
   const loadVehicles = async () => {
     setLoading(true);
     setError("");
 
     try {
-      const res = await fetch("/api/operator/vehicles", { credentials: "include" });
-      const data = await res.json();
+      const [vehiclesRes, stationsRes] = await Promise.all([
+        fetch("/api/operator/vehicles", { credentials: "include" }),
+        fetch("/api/vehicles/stations", { credentials: "include" }),
+      ]);
 
-      if (!res.ok) {
+      const data = await vehiclesRes.json();
+      const stationsData = await stationsRes.json();
+
+      if (!vehiclesRes.ok) {
         throw new Error(data.error || "Failed to load vehicles");
+      }
+
+      if (stationsRes.ok) {
+        const nextStations = stationsData ?? [];
+        setStations(nextStations);
+
+        if (nextStations.length > 0) {
+          setCreateForm((prev) => {
+            if (nextStations.some((station: StationSummary) => station.name === prev.zone)) {
+              return prev;
+            }
+            return { ...prev, zone: nextStations[0].name };
+          });
+        }
       }
 
       setVehicles(data.vehicles ?? []);
@@ -178,7 +233,7 @@ export default function OperatorPage() {
           style={{ background: "radial-gradient(circle, #6366f1 0%, transparent 70%)" }}
         />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 py-10">
+        <div className="relative z-10 max-w-[1800px] mx-auto px-6 py-10">
           <p className="text-white/40 text-xs uppercase tracking-widest mb-1">Operator</p>
           <h1 className="text-white text-2xl font-bold mb-8">Vehicle Management</h1>
 
@@ -193,74 +248,156 @@ export default function OperatorPage() {
             className="mb-8 rounded-xl border border-white/10 bg-white/5 p-5"
           >
             <p className="text-[11px] text-white/50 mb-4">
-              Fill in the vehicle details below. Coordinates use decimal GPS format.
+              Fill in the vehicle details below. You can click on the map to auto-fill latitude and longitude.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-              <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-white/50">Vehicle Type</span>
-                <select
-                  value={createForm.type}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, type: e.target.value as VehicleType }))}
-                  className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                >
-                  {VEHICLE_TYPES.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
-              </label>
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div className="lg:col-span-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-white/50">Vehicle Type</span>
+                    <select
+                      value={createForm.type}
+                      onChange={(e) => setCreateForm((prev) => ({ ...prev, type: e.target.value as VehicleType }))}
+                      className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    >
+                      {VEHICLE_TYPES.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                  </label>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-white/50">Zone Name</span>
-                <input
-                  value={createForm.zone}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, zone: e.target.value }))}
-                  placeholder="e.g., Downtown"
-                  required
-                  className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                />
-              </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-white/50">Zone Name</span>
+                    <select
+                      value={createForm.zone}
+                      onChange={(e) => setCreateForm((prev) => ({ ...prev, zone: e.target.value }))}
+                      required
+                      className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    >
+                      {stations.length === 0 ? (
+                        <option value="">No stations available</option>
+                      ) : (
+                        stations.map((station) => (
+                          <option key={station.name} value={station.name}>{station.name}</option>
+                        ))
+                      )}
+                    </select>
+                  </label>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-white/50">Battery (%)</span>
-                <input
-                  value={createForm.batteryLevel}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, batteryLevel: e.target.value }))}
-                  placeholder="0 to 100"
-                  className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                />
-              </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-white/50">Battery (%)</span>
+                    <input
+                      value={createForm.batteryLevel}
+                      onChange={(e) => setCreateForm((prev) => ({ ...prev, batteryLevel: e.target.value }))}
+                      placeholder="0 to 100"
+                      className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    />
+                  </label>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-white/50">Latitude</span>
-                <input
-                  value={createForm.lat}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, lat: e.target.value }))}
-                  placeholder="e.g., 45.5089"
-                  required
-                  className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                />
-              </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-white/50">State</span>
+                    <select
+                      value={createForm.state}
+                      onChange={(e) => setCreateForm((prev) => ({ ...prev, state: e.target.value as VehicleState }))}
+                      className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    >
+                      {VEHICLE_STATES.map((state) => (
+                        <option key={state} value={state}>{state}</option>
+                      ))}
+                    </select>
+                  </label>
 
-              <label className="flex flex-col gap-1">
-                <span className="text-[10px] uppercase tracking-wider text-white/50">Longitude</span>
-                <input
-                  value={createForm.lng}
-                  onChange={(e) => setCreateForm((prev) => ({ ...prev, lng: e.target.value }))}
-                  placeholder="e.g., -73.5617"
-                  required
-                  className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                />
-              </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-white/50">Latitude</span>
+                    <input
+                      value={createForm.lat}
+                      onChange={(e) => setCreateForm((prev) => ({ ...prev, lat: e.target.value }))}
+                      placeholder="e.g., 45.508900"
+                      required
+                      className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    />
+                  </label>
 
-              <div className="flex items-end">
-                <button
-                  type="submit"
-                  disabled={savingId === "create"}
-                  className="w-full rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold uppercase tracking-widest px-4 py-2 disabled:opacity-60"
-                >
-                  {savingId === "create" ? "Adding..." : "Add Vehicle"}
-                </button>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-[10px] uppercase tracking-wider text-white/50">Longitude</span>
+                    <input
+                      value={createForm.lng}
+                      onChange={(e) => setCreateForm((prev) => ({ ...prev, lng: e.target.value }))}
+                      placeholder="e.g., -73.561700"
+                      required
+                      className="rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                    />
+                  </label>
+
+                  <div className="md:col-span-2 flex justify-center pt-1">
+                    <button
+                      type="submit"
+                      disabled={savingId === "create"}
+                      className="w-full md:w-64 h-11 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold uppercase tracking-wider px-8 disabled:opacity-60"
+                    >
+                      {savingId === "create" ? "Adding..." : "Add Vehicle"}
+                    </button>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <p className="text-[10px] uppercase tracking-wider text-white/50 mb-2">Location Picker</p>
+                    <div className="relative h-84 rounded-lg border border-white/10 bg-[#0a0a0c] overflow-hidden">
+                      <LeafletLocationPicker
+                        lat={markerLat}
+                        lng={markerLng}
+                        onSelect={handleMapSelect}
+                      />
+                    </div>
+
+                    <p className="mt-2 text-[11px] text-white/50">
+                      Selected: {createForm.lat}, {createForm.lng}
+                    </p>
+                    <p className="text-[11px] text-white/40">
+                      Tip: drag and zoom naturally on the map, then click any point to set coordinates.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="lg:col-span-4">
+                <div className="h-full rounded-lg border border-white/10 bg-black/20 p-4">
+                  <p className="text-[10px] uppercase tracking-wider text-white/50 mb-2">
+                    Available Stations
+                  </p>
+
+                  {stations.length === 0 ? (
+                    <p className="text-[11px] text-white/45">No stations found yet.</p>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2">
+                      {stations.map((station) => (
+                        <div key={station.name} className="rounded-md border border-white/10 bg-white/[0.03] p-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="text-sm font-medium text-white">{station.name}</p>
+                            <p className="text-xs text-white/55">
+                              {station.available}/{station.total} available
+                            </p>
+                          </div>
+
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {station.byType.map((entry) => (
+                              <span
+                                key={`${station.name}-${entry.type}`}
+                                className="rounded-full border border-white/10 px-2 py-0.5 text-xs text-white/75"
+                              >
+                                {entry.type}: {entry.available}/{entry.total}
+                              </span>
+                            ))}
+                          </div>
+
+                          <p className="mt-1 text-xs text-emerald-300/85">
+                            Creatable here: {station.creatableTypes.join(", ")}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </form>
