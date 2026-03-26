@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { IVehicle } from "@/models/Vehicle";
+import { getStrategyForVehicle } from "@/lib/pricing";
 import Link from "next/link";
 import MobilityMap from "./MobilityMap";
 import ReservationModal from "./ReservationModal";
@@ -121,14 +122,9 @@ export default function VehicleDiscovery() {
 
   const getRunningCost = () => {
     if (!activeTrip) return 0;
-    const type = activeTrip.vehicle.type;
+    const strategy = getStrategyForVehicle(activeTrip.vehicle.type);
     const minutes = Math.max(1, Math.ceil(elapsedTime / 60));
-    switch (type) {
-      case "Scooter": return Math.round(minutes * 0.15 * 100) / 100;
-      case "Car": return Math.round(minutes * 0.45 * 100) / 100;
-      case "Bike": return Math.max(1, Math.ceil(minutes / 60)) * 3.0;
-      default: return 0;
-    }
+    return strategy.calculateTotal(minutes);
   };
 
   const refreshVehicles = () => {
