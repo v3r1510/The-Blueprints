@@ -7,6 +7,7 @@ import Trip from "@/models/Trip";
 import { paymentSystem } from "@/lib/payment";
 import { getStrategyForParkingFlat } from "@/lib/pricing";
 import { PaymentObserver } from "@/lib/observers/PaymentObserver";
+import { RevenueObserver } from "@/lib/observers/RevenueObserver";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
           { status: 402 },
         );
       }
-
+      RevenueObserver.getInstance().recordRevenue(fare);
       trip.endTime = endTime;
       trip.totalFare = fare;
       trip.status = "Completed";
@@ -127,7 +128,7 @@ export async function POST(req: NextRequest) {
         { status: 402 },
       );
     }
-
+    RevenueObserver.getInstance().recordRevenue(fare);
     trip.endTime = endTime;
     trip.totalFare = fare;
     trip.status = "Completed";
