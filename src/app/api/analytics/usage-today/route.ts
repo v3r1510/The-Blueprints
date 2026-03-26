@@ -24,7 +24,9 @@ export async function GET() {
       startTime: { $gte: startOfDay, $lte: endOfDay },
     }).lean();
 
-    const vehicleIds = trips.map((t) => t.vehicleId);
+    const vehicleIds = trips
+      .filter((t) => t.vehicleId)
+      .map((t) => t.vehicleId as unknown as import("mongoose").Types.ObjectId);
     const vehicles = await Vehicle.find(
       { _id: { $in: vehicleIds } },
       { _id: 1, type: 1 },
@@ -34,16 +36,23 @@ export async function GET() {
       vehicles.map((v) => [v._id.toString(), v.type as string]),
     );
 
-    const buckets: Record<number, { Car: number; Bike: number; Scooter: number }> = {};
+    const buckets: Record<number, { Car: number; Bike: number; Scooter: number; Parking: number }> =
+      {};
     for (let h = 0; h < 24; h++) {
-      buckets[h] = { Car: 0, Bike: 0, Scooter: 0 };
+      buckets[h] = { Car: 0, Bike: 0, Scooter: 0, Parking: 0 };
     }
 
     for (const trip of trips) {
       const hour = new Date(trip.startTime).getHours();
-      const type = vehicleTypeMap.get(trip.vehicleId.toString());
-      if (type === "Car" || type === "Bike" || type === "Scooter") {
-        buckets[hour][type]++;
+      if (trip.parkingSpotId) {
+        buckets[hour].Parking++;
+        continue;
+      }
+      if (trip.vehicleId) {
+        const type = vehicleTypeMap.get(trip.vehicleId.toString());
+        if (type === "Car" || type === "Bike" || type === "Scooter") {
+          buckets[hour][type]++;
+        }
       }
     }
 
