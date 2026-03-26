@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Vehicle from "@/models/Vehicle";
+import Trip from "@/models/Trip";
 import { VehicleType, ResourceState } from "@/models/Vehicle";
 import { getFactory } from "@/lib/vehicle-factory";
 

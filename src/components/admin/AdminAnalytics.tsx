@@ -18,19 +18,9 @@ interface PaymentStats {
   total: number;
 }
 
-interface PaymentStats {
-  successCount: number;
-  failureCount: number;
-  successRate: number;
-  total: number;
-}
-
 export default function AdminAnalytics() {
   const [activeRentals, setActiveRentals] = useState<number | null>(null);
   const [loadingRentals, setLoadingRentals] = useState(true);
-
-  const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
-  const [loadingPayments, setLoadingPayments] = useState(true);
 
   const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(true);
@@ -61,15 +51,6 @@ export default function AdminAnalytics() {
     fetch_();
     const interval = setInterval(fetch_, 10_000);
     return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    setLoadingPayments(true);
-    fetch("/api/analytics/payment-stats")
-      .then((r) => r.json())
-      .then((data) => setPaymentStats(data))
-      .catch(() => setPaymentStats(null))
-      .finally(() => setLoadingPayments(false));
   }, []);
 
   // ── Add future metrics here ────────────────────────────────────────────────
