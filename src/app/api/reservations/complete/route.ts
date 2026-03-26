@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { connectDB } from "@/lib/mongodb";
 import Vehicle from "@/models/Vehicle";
+import ParkingSpot from "@/models/ParkingSpot";
 import Trip from "@/models/Trip";
 import { paymentSystem } from "@/lib/payment";
+import { getStrategyForParkingFlat } from "@/lib/pricing";
 import { PaymentObserver } from "@/lib/observers/PaymentObserver";
 
 export async function POST(req: NextRequest) {
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const trip = await Trip.findById(tripId).populate("vehicleId");
+    const trip = await Trip.findById(tripId).populate("vehicleId").populate("parkingSpotId");
     if (!trip) {
       return NextResponse.json({ error: "Trip not found" }, { status: 404 });
     }
@@ -41,12 +43,70 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const endTime = new Date();
+
+    const isParking =
+      trip.resourceType === "parking" ||
+      (!!trip.parkingSpotId && !trip.vehicleId);
+
+    if (isParking) {
+      const spot = await ParkingSpot.findById(trip.parkingSpotId);
+      if (!spot) {
+        return NextResponse.json({ error: "Parking spot not found" }, { status: 404 });
+      }
+
+      const strategy = getStrategyForParkingFlat(spot.flatRate);
+      const { fare, durationMinutes, rate, unit } = paymentSystem.calculateFare(
+        strategy,
+        trip.startTime,
+        endTime,
+      );
+
+      const debit = await paymentSystem.debitAccount(session.user.id as string, fare);
+
+      if (!debit.success) {
+        PaymentObserver.getInstance().recordFailure(session.user.id as string);
+        return NextResponse.json(
+          {
+            error: "Insufficient balance to complete this parking session",
+            fare,
+            balanceRemaining: debit.remaining,
+          },
+          { status: 402 },
+        );
+      }
+
+      trip.endTime = endTime;
+      trip.totalFare = fare;
+      trip.status = "Completed";
+      await trip.save();
+
+      spot.state = "Available";
+      await spot.save();
+
+      return NextResponse.json({
+        message: "Parking session completed",
+        receipt: {
+          tripId: trip._id,
+          resourceType: "parking" as const,
+          lotNumber: spot.lotNumber,
+          zone: spot.zone,
+          startTime: trip.startTime,
+          endTime,
+          durationMinutes,
+          rate,
+          unit,
+          totalFare: fare,
+          balanceRemaining: debit.remaining,
+        },
+      });
+    }
+
     const vehicle = await Vehicle.findById(trip.vehicleId);
     if (!vehicle) {
       return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
     }
 
-    const endTime = new Date();
     const strategy = paymentSystem.resolveStrategy(vehicle.type);
     const { fare, durationMinutes, rate, unit } = paymentSystem.calculateFare(
       strategy,
@@ -80,6 +140,7 @@ export async function POST(req: NextRequest) {
       message: "Rental completed",
       receipt: {
         tripId: trip._id,
+        resourceType: "vehicle" as const,
         vehicleType: vehicle.type,
         zone: vehicle.zone,
         startTime: trip.startTime,

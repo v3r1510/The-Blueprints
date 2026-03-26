@@ -61,3 +61,8 @@ export function getStrategyForVehicle(vehicleType: string): PricingStrategy {
 export function getStrategyByName(name: string): PricingStrategy {
   return STRATEGY_DEFAULTS[name as StrategyName] ?? new FlatRatePricing(0);
 }
+
+/** Flat-rate parking sessions (rate = total fare when trip ends). */
+export function getStrategyForParkingFlat(flatRate: number): PricingStrategy {
+  return new FlatRatePricing(flatRate);
+}
