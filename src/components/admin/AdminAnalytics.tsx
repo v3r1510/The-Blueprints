@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import UsageChart from "./UsageChart";
 
 interface StatCard {
   label: string;
@@ -25,24 +26,34 @@ export default function AdminAnalytics() {
   const [loadingPayments, setLoadingPayments] = useState(true);
 
   useEffect(() => {
-    setLoadingRentals(true);
-    fetch("/api/analytics/active-rentals")
-      .then((r) => r.json())
-      .then((data) => setActiveRentals(data.activeRentals ?? 0))
-      .catch(() => setActiveRentals(null))
-      .finally(() => setLoadingRentals(false));
+    const fetch_ = () => {
+      setLoadingRentals(true);
+      fetch("/api/analytics/active-rentals")
+        .then((r) => r.json())
+        .then((data) => setActiveRentals(data.activeRentals ?? 0))
+        .catch(() => setActiveRentals(null))
+        .finally(() => setLoadingRentals(false));
+    };
+    fetch_();
+    const interval = setInterval(fetch_, 10_000);
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    setLoadingPayments(true);
-    fetch("/api/analytics/payment-stats")
-      .then((r) => r.json())
-      .then((data) => setPaymentStats(data))
-      .catch(() => setPaymentStats(null))
-      .finally(() => setLoadingPayments(false));
+    const fetch_ = () => {
+      setLoadingPayments(true);
+      fetch("/api/analytics/payment-stats")
+        .then((r) => r.json())
+        .then((data) => setPaymentStats(data))
+        .catch(() => setPaymentStats(null))
+        .finally(() => setLoadingPayments(false));
+    };
+    fetch_();
+    const interval = setInterval(fetch_, 10_000);
+    return () => clearInterval(interval);
   }, []);
 
-  // ── Add future metrics here ────────────────────────────────────────────────
+  // Add future metrics here -----------
   const stats: StatCard[] = [
     {
       label: "Active Rentals",
@@ -58,8 +69,8 @@ export default function AdminAnalytics() {
       icon: "💳",
       accent: "border-blue-500/30 text-blue-400",
       description: paymentStats
-        ? `${paymentStats.successCount} completed · ${paymentStats.failureCount} cancelled`
-        : "Completed vs cancelled payments",
+        ? `${paymentStats.successCount} completed · ${paymentStats.failureCount} rejected`
+        : "Completed vs rejected payments",
       loading: loadingPayments,
     },
   ];
@@ -71,11 +82,12 @@ export default function AdminAnalytics() {
         Platform Analytics
       </h2>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         {stats.map((stat) => (
           <StatCard key={stat.label} stat={stat} />
         ))}
       </div>
+      <UsageChart />
     </div>
   );
 }
