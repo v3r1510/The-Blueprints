@@ -3,6 +3,7 @@ import { connectDB } from "@/lib/mongodb";
 import Vehicle from "@/models/Vehicle";
 import { VehicleType, ResourceState } from "@/models/Vehicle";
 import { getFactory } from "@/lib/vehicle-factory";
+import Trip from "@/models/Trip";
 
 const STATIONS: Record<string, { name: string; coordinates: [number, number] }> = {
   pda:       { name: "Station Place-des-Arts", coordinates: [-73.568, 45.508] },
