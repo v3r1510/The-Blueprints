@@ -5,7 +5,7 @@ import Vehicle from "@/models/Vehicle";
 import Trip from "@/models/Trip";
 import { paymentSystem } from "@/lib/payment";
 import { PaymentObserver } from "@/lib/observers/PaymentObserver";
-import { getMobilityProviderService } from "@/lib/mobility-provider/service";
+import { getMobilityProviderService } from "@/lib/mobility-provider/mobilityProviderService";
 
 export async function POST(req: NextRequest) {
   const session = await auth();

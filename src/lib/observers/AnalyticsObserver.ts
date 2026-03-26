@@ -4,7 +4,7 @@ export class AnalyticsSystem implements IObserver {
   private static instance: AnalyticsSystem;
   private activeRentals: number = 0;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): AnalyticsSystem {
     if (!AnalyticsSystem.instance) {
@@ -15,9 +15,9 @@ export class AnalyticsSystem implements IObserver {
 
   update(data: VehicleStateChange): void {
     const wasActive =
-      data.previousState === "Reserved" || data.previousState === "Active";
+      data.previousState === "Reserved" || data.previousState === "InUse";
     const isActive =
-      data.newState === "Reserved" || data.newState === "Active";
+      data.newState === "Reserved" || data.newState === "InUse";
 
     if (!wasActive && isActive) this.activeRentals++;
     if (wasActive && !isActive) this.activeRentals = Math.max(0, this.activeRentals - 1);

@@ -3,7 +3,7 @@ import { VehicleType } from "@/models/Vehicle";
 import { BookableResource } from "@/lib/observers/BookableResource";
 import { AnalyticsSystem } from "@/lib/observers/AnalyticsObserver";
 import { MapDisplay } from "@/lib/observers/MapDisplay";
-import { VehicleFactoryRegistry } from "@/lib/mobility-provider/factory";
+import { VehicleFactoryRegistry } from "@/lib/mobility-provider/vehicleResourceFactory";
 
 export interface CreateVehicleInput {
   type: VehicleType;

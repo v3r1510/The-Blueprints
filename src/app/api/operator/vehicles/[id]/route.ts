@@ -5,7 +5,7 @@ import { ResourceState } from "@/models/Vehicle";
 import {
     getMobilityProviderService,
     serializeVehicle,
-} from "@/lib/mobility-provider/service";
+} from "@/lib/mobility-provider/mobilityProviderService";
 
 const VALID_STATES: ResourceState[] = [
     "Available",
