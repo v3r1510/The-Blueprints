@@ -66,7 +66,7 @@ function NavLink({ href, icon, label, active, collapsed }: { href: string; icon:
     <Link
       href={href}
       title={collapsed ? label : undefined}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
+      className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all ${
         collapsed ? "justify-center" : ""
       } ${
         active
@@ -113,11 +113,14 @@ export default function SideNav() {
       <div className={`flex items-center ${collapsed ? "justify-center py-5" : "justify-between px-5 py-6"}`}>
         {!collapsed && (
           <div className="min-w-0">
-            <p className="text-white/40 text-[9px] uppercase tracking-[0.2em]">
+            <p className="text-white/40 text-[10px] uppercase tracking-[0.18em]">
               The Blueprints
             </p>
-            <p className="text-white font-bold text-sm mt-0.5 truncate">
+            <p className="text-white font-bold text-base mt-0.5 truncate">
               {session?.user?.name?.split(" ")[0] ?? "Dashboard"}
+            </p>
+            <p className="text-xs italic tracking-wide text-violet-300/80 capitalize mt-0.5 truncate">
+              {session?.user?.role ?? "rider"}
             </p>
           </div>
         )}
@@ -134,7 +137,7 @@ export default function SideNav() {
 
       <nav className={`flex-1 ${collapsed ? "px-2" : "px-3"} space-y-1`}>
         {!collapsed && (
-          <p className="text-white/30 text-[9px] uppercase tracking-widest px-2 mb-2">
+          <p className="text-white/30 text-[11px] uppercase tracking-widest px-2 mb-2">
             Services
           </p>
         )}
@@ -165,7 +168,7 @@ export default function SideNav() {
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           title={collapsed ? "Sign out" : undefined}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-white/30 hover:text-red-400 hover:bg-red-500/5 transition-all w-full border border-transparent ${
+          className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-white/30 hover:text-red-400 hover:bg-red-500/5 transition-all w-full border border-transparent ${
             collapsed ? "justify-center" : ""
           }`}
         >

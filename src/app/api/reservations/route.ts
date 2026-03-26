@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Vehicle from "@/models/Vehicle";
 import Trip from "@/models/Trip";
 import { paymentSystem } from "@/lib/payment";
+import { getMobilityProviderService } from "@/lib/mobility-provider/service";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -40,13 +41,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Vehicle not found" }, { status: 404 });
     }
 
-    if (vehicle.state !== "Available") {
-      return NextResponse.json(
-        { error: "Vehicle is no longer available" },
-        { status: 400 },
-      );
-    }
-
     const hasFunds = await paymentSystem.verifyBalance(session.user.id as string);
     if (!hasFunds) {
       return NextResponse.json(
@@ -55,8 +49,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    vehicle.state = "Reserved";
-    await vehicle.save();
+    try {
+      const providerService = getMobilityProviderService();
+      await providerService.reserveVehicle(vehicleId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Vehicle is no longer available";
+      const status = message.includes("Invalid state transition") ? 400 : 500;
+      return NextResponse.json(
+        { error: message.includes("Invalid state transition") ? "Vehicle is no longer available" : message },
+        { status },
+      );
+    }
 
 
     const newTrip = await Trip.create({
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
       {
         message: "Reservation successful!",
         trip: newTrip,
-        vehicleState: vehicle.state,
+        vehicleState: "Reserved",
       },
       { status: 201 },
     );

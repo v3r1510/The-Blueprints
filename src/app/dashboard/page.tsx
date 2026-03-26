@@ -192,18 +192,18 @@ export default function DashboardPage() {
 
         {/* Operator placeholder */}
         {role === "operator" && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {["Manage Fleet", "Update Vehicle Status"].map((action) => (
-              <div
-                key={action}
-                className="rounded-xl border border-white/10 bg-white/5 p-6"
-              >
-                <p className="text-white font-semibold text-sm mb-1">
-                  {action}
-                </p>
-                <p className="text-white/40 text-xs">Coming soon</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 gap-4">
+            <Link
+              href="/operator"
+              className="rounded-xl border border-white/10 bg-white/5 p-6 hover:bg-white/10 transition-colors"
+            >
+              <p className="text-white font-semibold text-sm mb-1">
+                Manage Fleet
+              </p>
+              <p className="text-white/40 text-xs">
+                Add, update status, and remove vehicles from one console.
+              </p>
+            </Link>
           </div>
         )}
 
