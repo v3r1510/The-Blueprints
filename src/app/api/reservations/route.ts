@@ -4,6 +4,7 @@ import { connectDB } from "@/lib/mongodb";
 import Vehicle from "@/models/Vehicle";
 import Trip from "@/models/Trip";
 import { paymentSystem } from "@/lib/payment";
+import { PaymentObserver } from "@/lib/observers/PaymentObserver";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
 
     const hasFunds = await paymentSystem.verifyBalance(session.user.id as string);
     if (!hasFunds) {
+      PaymentObserver.getInstance().recordFailure(session.user.id as string);
       return NextResponse.json(
         { error: "Insufficient balance to reserve this vehicle" },
         { status: 402 },
