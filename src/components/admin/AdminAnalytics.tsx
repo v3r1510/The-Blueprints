@@ -10,9 +10,19 @@ interface StatCard {
   loading: boolean;
 }
 
+interface PaymentStats {
+  successCount: number;
+  failureCount: number;
+  successRate: number;
+  total: number;
+}
+
 export default function AdminAnalytics() {
   const [activeRentals, setActiveRentals] = useState<number | null>(null);
   const [loadingRentals, setLoadingRentals] = useState(true);
+
+  const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
+  const [loadingPayments, setLoadingPayments] = useState(true);
 
   useEffect(() => {
     setLoadingRentals(true);
@@ -23,7 +33,16 @@ export default function AdminAnalytics() {
       .finally(() => setLoadingRentals(false));
   }, []);
 
-  // Add future metrics here ----------
+  useEffect(() => {
+    setLoadingPayments(true);
+    fetch("/api/analytics/payment-stats")
+      .then((r) => r.json())
+      .then((data) => setPaymentStats(data))
+      .catch(() => setPaymentStats(null))
+      .finally(() => setLoadingPayments(false));
+  }, []);
+
+  // ── Add future metrics here ────────────────────────────────────────────────
   const stats: StatCard[] = [
     {
       label: "Active Rentals",
@@ -32,6 +51,16 @@ export default function AdminAnalytics() {
       accent: "border-emerald-500/30 text-emerald-400",
       description: "Trips currently in Reserved or Active state",
       loading: loadingRentals,
+    },
+    {
+      label: "Payment Success Rate",
+      value: paymentStats !== null ? `${paymentStats.successRate}%` : null,
+      icon: "💳",
+      accent: "border-blue-500/30 text-blue-400",
+      description: paymentStats
+        ? `${paymentStats.successCount} completed · ${paymentStats.failureCount} cancelled`
+        : "Completed vs cancelled payments",
+      loading: loadingPayments,
     },
   ];
   // ---------------
