@@ -3,6 +3,8 @@
 import AppShell from "@/components/AppShell";
 import { useState, useEffect, useCallback } from "react";
 
+/* ───────────────────────── Types ───────────────────────── */
+
 interface Vehicle {
   vehicleId: string;
   label: string;
@@ -33,6 +35,8 @@ interface TransitResponse {
   totalRoutes: number;
   routes: RouteData[];
 }
+
+/* ───────────────────────── Constants ───────────────────────── */
 
 const STATUS_COLORS: Record<string, string> = {
   IN_TRANSIT_TO: "text-emerald-400",
@@ -72,6 +76,8 @@ const OCCUPANCY_COLORS: Record<string, string> = {
   NOT_ACCEPTING_PASSENGERS: "text-red-500",
 };
 
+/* ───────────────────────── Helpers ───────────────────────── */
+
 function timeAgo(unix: number): string {
   if (!unix) return "";
   const seconds = Math.floor(Date.now() / 1000 - unix);
@@ -89,6 +95,8 @@ function BusIcon({ className = "w-5 h-5" }: { className?: string }) {
   );
 }
 
+/* ───────────────────── Route card ───────────────────── */
+
 function RouteCard({
   route,
   expanded,
@@ -104,10 +112,7 @@ function RouteCard({
 
   return (
     <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl overflow-hidden hover:border-white/10 transition-colors">
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-4 p-4 text-left"
-      >
+      <button onClick={onToggle} className="w-full flex items-center gap-4 p-4 text-left">
         <div className="w-14 h-14 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center shrink-0">
           <span className="text-violet-300 font-bold text-lg">{route.routeId}</span>
         </div>
@@ -141,16 +146,7 @@ function RouteCard({
             )}
           </div>
         </div>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className={`w-4 h-4 text-white/30 transition-transform duration-200 shrink-0 ${expanded ? "rotate-180" : ""}`}
-        >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 text-white/30 transition-transform duration-200 shrink-0 ${expanded ? "rotate-180" : ""}`}>
           <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
@@ -160,34 +156,25 @@ function RouteCard({
           <div className="grid grid-cols-1 gap-2 mt-3">
             {route.vehicles
               .sort((a, b) => {
-                const statusOrder: Record<string, number> = { IN_TRANSIT_TO: 0, INCOMING_AT: 1, STOPPED_AT: 2 };
-                return (statusOrder[a.status] ?? 3) - (statusOrder[b.status] ?? 3);
+                const o: Record<string, number> = { IN_TRANSIT_TO: 0, INCOMING_AT: 1, STOPPED_AT: 2 };
+                return (o[a.status] ?? 3) - (o[b.status] ?? 3);
               })
               .map((v) => (
-                <div
-                  key={v.vehicleId}
-                  className="flex items-center gap-3 px-3 py-2.5 bg-white/[0.02] rounded-lg border border-white/[0.04]"
-                >
+                <div key={v.vehicleId} className="flex items-center gap-3 px-3 py-2.5 bg-white/[0.02] rounded-lg border border-white/[0.04]">
                   <div className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[v.status] ?? "bg-white/30"}`} />
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-white/80 text-xs font-medium">
-                        Bus {v.label || v.vehicleId}
-                      </span>
+                      <span className="text-white/80 text-xs font-medium">Bus {v.label || v.vehicleId}</span>
                       <span className={`text-[10px] ${STATUS_COLORS[v.status] ?? "text-white/30"}`}>
                         {STATUS_LABELS[v.status] ?? v.status}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 mt-0.5">
                       {v.speed > 0 && (
-                        <span className="text-white/30 text-[10px]">
-                          {Math.round(v.speed * 3.6)} km/h
-                        </span>
+                        <span className="text-white/30 text-[10px]">{Math.round(v.speed * 3.6)} km/h</span>
                       )}
                       {v.stopId && (
-                        <span className="text-white/30 text-[10px]">
-                          Stop {v.stopId}
-                        </span>
+                        <span className="text-white/30 text-[10px]">Stop {v.stopId}</span>
                       )}
                       {v.nextStopDeparture > 0 && (
                         <span className="text-white/30 text-[10px]">
@@ -201,9 +188,7 @@ function RouteCard({
                       )}
                     </div>
                   </div>
-                  <span className="text-white/20 text-[10px] shrink-0">
-                    {timeAgo(v.timestamp)}
-                  </span>
+                  <span className="text-white/20 text-[10px] shrink-0">{timeAgo(v.timestamp)}</span>
                 </div>
               ))}
           </div>
@@ -212,6 +197,8 @@ function RouteCard({
     </div>
   );
 }
+
+/* ────────────────────── Main page ────────────────────── */
 
 export default function TransitPage() {
   const [data, setData] = useState<TransitResponse | null>(null);
@@ -237,9 +224,7 @@ export default function TransitPage() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   useEffect(() => {
     if (!autoRefresh) return;
@@ -256,9 +241,7 @@ export default function TransitPage() {
     });
   };
 
-  const filteredRoutes = data?.routes.filter((r) =>
-    r.routeId.includes(search.trim())
-  ) ?? [];
+  const filteredRoutes = data?.routes.filter((r) => r.routeId.includes(search.trim())) ?? [];
 
   return (
     <AppShell>
@@ -305,16 +288,7 @@ export default function TransitPage() {
         {/* Search + Controls */}
         <div className="flex items-center gap-3 mb-6">
           <div className="flex-1 relative">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30"
-            >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/30">
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -329,11 +303,7 @@ export default function TransitPage() {
           <button
             onClick={() => setAutoRefresh((v) => !v)}
             title={autoRefresh ? "Pause auto-refresh" : "Resume auto-refresh"}
-            className={`p-2.5 rounded-lg border transition-all ${
-              autoRefresh
-                ? "bg-violet-500/10 border-violet-500/20 text-violet-400"
-                : "bg-white/[0.03] border-white/[0.08] text-white/40"
-            }`}
+            className={`p-2.5 rounded-lg border transition-all ${autoRefresh ? "bg-violet-500/10 border-violet-500/20 text-violet-400" : "bg-white/[0.03] border-white/[0.08] text-white/40"}`}
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
               {autoRefresh ? (
@@ -391,7 +361,7 @@ export default function TransitPage() {
           </div>
         )}
 
-        {/* Route List */}
+        {/* Active Bus Lines */}
         {data && (
           <>
             {filteredRoutes.length === 0 ? (
