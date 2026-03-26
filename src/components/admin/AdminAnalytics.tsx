@@ -18,9 +18,19 @@ interface PaymentStats {
   total: number;
 }
 
+interface PaymentStats {
+  successCount: number;
+  failureCount: number;
+  successRate: number;
+  total: number;
+}
+
 export default function AdminAnalytics() {
   const [activeRentals, setActiveRentals] = useState<number | null>(null);
   const [loadingRentals, setLoadingRentals] = useState(true);
+
+  const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
+  const [loadingPayments, setLoadingPayments] = useState(true);
 
   const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(true);
@@ -53,7 +63,16 @@ export default function AdminAnalytics() {
     return () => clearInterval(interval);
   }, []);
 
-  // Add future metrics here -----------
+  useEffect(() => {
+    setLoadingPayments(true);
+    fetch("/api/analytics/payment-stats")
+      .then((r) => r.json())
+      .then((data) => setPaymentStats(data))
+      .catch(() => setPaymentStats(null))
+      .finally(() => setLoadingPayments(false));
+  }, []);
+
+  // ── Add future metrics here ────────────────────────────────────────────────
   const stats: StatCard[] = [
     {
       label: "Active Rentals",
@@ -69,8 +88,8 @@ export default function AdminAnalytics() {
       icon: "💳",
       accent: "border-blue-500/30 text-blue-400",
       description: paymentStats
-        ? `${paymentStats.successCount} completed · ${paymentStats.failureCount} rejected`
-        : "Completed vs rejected payments",
+        ? `${paymentStats.successCount} completed · ${paymentStats.failureCount} cancelled`
+        : "Completed vs cancelled payments",
       loading: loadingPayments,
     },
   ];
