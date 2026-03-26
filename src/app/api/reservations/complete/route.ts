@@ -47,8 +47,9 @@ export async function POST(req: NextRequest) {
     }
 
     const endTime = new Date();
+    const strategy = paymentSystem.resolveStrategy(vehicle.type);
     const { fare, durationMinutes, rate, unit } = paymentSystem.calculateFare(
-      vehicle.type,
+      strategy,
       trip.startTime,
       endTime,
     );
