@@ -1,9 +1,15 @@
 import Vehicle, { IVehicle, ResourceState } from "@/models/Vehicle";
-import {
-  CreateVehicleInput,
-  VehicleFactoryRegistry,
-} from "@/lib/mobility-provider/factory";
-import { BookableResource } from "@/lib/mobility-provider/state";
+import { VehicleType } from "@/models/Vehicle";
+import { BookableResource } from "@/lib/observers/BookableResource";
+
+export interface CreateVehicleInput {
+  type: VehicleType;
+  zone: string;
+  batteryLevel?: number;
+  lat: number;
+  lng: number;
+  state?: ResourceState;
+}
 
 export interface UpdateVehicleInput {
   zone?: string;
@@ -19,16 +25,22 @@ class MobilityProviderService {
   }
 
   async addVehicle(input: CreateVehicleInput) {
-    const factory = VehicleFactoryRegistry.getFactory(input.type);
-    const resourceState = new BookableResource("Available");
+    const resourceState = new BookableResource("draft-resource", "Available");
     if (input.state && input.state !== "Available") {
       resourceState.transitionTo(input.state);
     }
 
-    const resource = factory.createResource({
-      ...input,
+    const resource = {
+      type: input.type,
+      zone: input.zone,
+      batteryLevel: input.batteryLevel,
       state: resourceState.status,
-    });
+      location: {
+        type: "Point" as const,
+        coordinates: [input.lng, input.lat] as [number, number],
+      },
+    };
+
     return Vehicle.create(resource);
   }
 
@@ -48,7 +60,7 @@ class MobilityProviderService {
         throw new Error("Vehicle not found");
       }
 
-      const bookableResource = new BookableResource(existing.state);
+      const bookableResource = new BookableResource(vehicleId, existing.state);
       bookableResource.transitionTo(input.state);
       update.state = bookableResource.status;
     }
@@ -78,7 +90,7 @@ class MobilityProviderService {
       throw new Error("Vehicle not found");
     }
 
-    const bookableResource = new BookableResource(vehicle.state);
+    const bookableResource = new BookableResource(vehicleId, vehicle.state);
     if (!bookableResource.canRemove()) {
       throw new Error("Cannot remove a reserved or in-use vehicle");
     }
@@ -93,7 +105,7 @@ class MobilityProviderService {
       throw new Error("Vehicle not found");
     }
 
-    const bookableResource = new BookableResource(vehicle.state);
+    const bookableResource = new BookableResource(vehicleId, vehicle.state);
     bookableResource.reserve();
 
     vehicle.state = bookableResource.status;
