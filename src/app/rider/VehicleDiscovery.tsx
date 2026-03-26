@@ -50,12 +50,23 @@ export default function VehicleDiscovery() {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isEndingRental, setIsEndingRental] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [stations, setStations] = useState<StationStatus[]>([]);
 
   const showToast = useCallback((type: Toast["type"], message: string, action?: Toast["action"]) => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, type, message, action }]);
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
   }, []);
+
+  const refreshStations = () => {
+    fetch("/api/vehicles/stations", { credentials: "include" })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => setStations(data))
+      .catch((err) => console.error("Station refresh failed:", err));
+  };
 
   useEffect(() => {
     Promise.all([
@@ -64,9 +75,14 @@ export default function VehicleDiscovery() {
         return res.json();
       }),
       fetch("/api/reservations/active").then((res) => res.json()),
+      fetch("/api/vehicles/stations", { credentials: "include" }).then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      }),
     ])
-      .then(([vehicleData, activeTripData]) => {
+      .then(([vehicleData, activeTripData, stationData]) => {
         setVehicles(vehicleData);
+        setStations(stationData);
         if (activeTripData.activeTrip?.vehicle) {
           const { tripId, startTime, vehicle } = activeTripData.activeTrip;
           setActiveTrip({
@@ -123,6 +139,7 @@ export default function VehicleDiscovery() {
       })
       .then((data) => setVehicles(data))
       .catch((err) => console.error("Vehicle refresh failed:", err));
+    refreshStations();
   };
 
   const endRental = async () => {
@@ -142,6 +159,7 @@ export default function VehicleDiscovery() {
         setActiveTrip((prev) =>
           prev ? { ...prev, endTime: Date.now(), receipt: data.receipt } : null,
         );
+        refreshStations();
       } else if (res.status === 402) {
         showToast(
           "warning",
@@ -157,17 +175,6 @@ export default function VehicleDiscovery() {
       setIsEndingRental(false);
     }
   };
-
-  const stations = vehicles.reduce<Record<string, StationStatus>>(
-    (acc, vehicle) => {
-      const zone = vehicle.zone || "Unknown";
-      if (!acc[zone]) acc[zone] = { name: zone, available: 0, total: 0 };
-      acc[zone].total++;
-      if (vehicle.state === "Available") acc[zone].available++;
-      return acc;
-    },
-    {},
-  );
 
   const displayedVehicles =
     filter === "All" ? vehicles : vehicles.filter((v) => v.type === filter);
@@ -208,6 +215,7 @@ export default function VehicleDiscovery() {
         });
         setSelectedVehicle(null);
         setShowConfirmModal(false);
+        refreshStations();
       } else if (res.status === 402) {
         setShowConfirmModal(false);
         showToast(
@@ -248,7 +256,7 @@ export default function VehicleDiscovery() {
 
       {/* RIGHT: Status & Details Sidebar */}
       <div className="w-full lg:w-80 flex flex-col gap-6">
-        {activeTrip ? (
+        {activeTrip && (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-6 animate-in slide-in-from-right-4 duration-500 relative overflow-hidden">
             <div className="absolute top-6 right-6 flex items-center gap-2">
               <span className="relative flex h-2 w-2">
@@ -336,33 +344,33 @@ export default function VehicleDiscovery() {
               </button>
             )}
           </div>
-        ) : (
-          <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-            <h2 className="text-white/70 text-[10px] uppercase tracking-widest mb-6">
-              Station Status
-            </h2>
-            <div className="space-y-6">
-              {Object.values(stations).map((s) => (
-                <div key={s.name} className="group">
-                  <div className="flex justify-between text-[11px] mb-2">
-                    <span className="text-white/50 group-hover:text-white transition-colors">
-                      {s.name}
-                    </span>
-                    <span className="text-emerald-400 font-mono">
-                      {s.available}/{s.total}
-                    </span>
-                  </div>
-                  <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 transition-all duration-1000"
-                      style={{ width: `${(s.available / s.total) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
         )}
+
+        <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+          <h2 className="text-white/70 text-[10px] uppercase tracking-widest mb-6">
+            Station Status
+          </h2>
+          <div className="space-y-6">
+            {stations.map((s) => (
+              <div key={s.name} className="group">
+                <div className="flex justify-between text-[11px] mb-2">
+                  <span className="text-white/50 group-hover:text-white transition-colors">
+                    {s.name}
+                  </span>
+                  <span className="text-emerald-400 font-mono">
+                    {s.available}/{s.total}
+                  </span>
+                </div>
+                <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-1000"
+                    style={{ width: `${(s.available / s.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {selectedVehicle && !activeTrip && (
           <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-6 animate-in slide-in-from-right-4 duration-500">
