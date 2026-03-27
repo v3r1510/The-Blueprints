@@ -9,7 +9,7 @@ export class PerMinutePricing implements PricingStrategy {
   readonly name = "PerMinute";
   readonly unit = "min";
 
-  constructor(public readonly rate: number) {}
+  constructor(public readonly rate: number) { }
 
   calculateTotal(durationMinutes: number): number {
     return Math.round(durationMinutes * this.rate * 100) / 100;
@@ -20,7 +20,7 @@ export class PerHourPricing implements PricingStrategy {
   readonly name = "PerHour";
   readonly unit = "hour";
 
-  constructor(public readonly rate: number) {}
+  constructor(public readonly rate: number) { }
 
   calculateTotal(durationMinutes: number): number {
     const hours = Math.max(1, Math.ceil(durationMinutes / 60));
@@ -32,7 +32,7 @@ export class FlatRatePricing implements PricingStrategy {
   readonly name = "FlatRate";
   readonly unit = "flat";
 
-  constructor(public readonly rate: number = 0) {}
+  constructor(public readonly rate: number = 0) { }
 
   calculateTotal(_durationMinutes: number): number {
     return this.rate;

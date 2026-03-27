@@ -9,14 +9,17 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@types/leaflet": "^1.9.21",
     "bcryptjs": "^3.0.3",
     "gtfs-realtime-bindings": "^1.1.1",
     "jszip": "^3.10.1",
+    "leaflet": "^1.9.4",
     "mongoose": "^9.3.0",
     "next": "16.1.6",
     "next-auth": "^5.0.0-beta.30",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-leaflet": "^5.0.0",
     "recharts": "^3.8.1",
     "stripe": "^20.4.1"
   },

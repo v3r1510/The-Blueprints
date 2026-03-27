@@ -1,15 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
-
-const FUND_OPTIONS = [
-  { label: "$10", priceEnvKey: "STRIPE_PRICE_10", priceId: "" },
-  { label: "$25", priceEnvKey: "STRIPE_PRICE_25", priceId: "" },
-  { label: "$50", priceEnvKey: "STRIPE_PRICE_50", priceId: "" },
-];
 
 const ROLE_BADGE: Record<string, string> = {
   admin: "bg-violet-500/20 text-violet-300 border-violet-500/30",
@@ -17,7 +11,7 @@ const ROLE_BADGE: Record<string, string> = {
   rider: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
 };
 
-export default function ProfilePage() {
+function ProfileContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const [balance, setBalance] = useState<number | null>(null);
@@ -38,7 +32,7 @@ export default function ProfilePage() {
     fetch("/api/stripe/prices")
       .then((res) => res.json())
       .then((data) => setPriceIds(data))
-      .catch(() => {});
+      .catch(() => { });
   }, []);
 
   const handleAddFunds = async (priceId: string) => {
@@ -51,7 +45,7 @@ export default function ProfilePage() {
       });
       const data = await res.json();
       if (data.url) {
-        window.location.href = data.url;
+        window.location.assign(data.url);
       } else {
         alert("Error: " + (data.error ?? "Could not create checkout session"));
         setLoadingPrice(null);
@@ -74,26 +68,26 @@ export default function ProfilePage() {
 
   return (
     <AppShell>
-        <div
-          className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
-          style={{
-            background: "radial-gradient(circle, #6366f1 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="animate-float-b pointer-events-none absolute -bottom-40 -right-24 w-150 h-150 rounded-full opacity-10"
-          style={{
-            background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
-          }}
-        />
+      <div
+        className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
+        style={{
+          background: "radial-gradient(circle, #6366f1 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="animate-float-b pointer-events-none absolute -bottom-40 -right-24 w-150 h-150 rounded-full opacity-10"
+        style={{
+          background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
+        }}
+      />
 
-        <div className="relative z-10 max-w-xl mx-auto px-6 py-10">
-          <div className="mb-10">
-            <p className="text-white/40 text-xs uppercase tracking-widest mb-1">
-              Account
-            </p>
-            <h1 className="text-2xl font-bold text-white">Profile</h1>
-          </div>
+      <div className="relative z-10 max-w-xl mx-auto px-6 py-10">
+        <div className="mb-10">
+          <p className="text-white/40 text-xs uppercase tracking-widest mb-1">
+            Account
+          </p>
+          <h1 className="text-2xl font-bold text-white">Profile</h1>
+        </div>
 
         {success && (
           <div className="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 animate-in fade-in duration-300">
@@ -159,11 +153,10 @@ export default function ProfilePage() {
                 key={option.priceId}
                 onClick={() => handleAddFunds(option.priceId)}
                 disabled={!!loadingPrice}
-                className={`py-4 rounded-xl border text-sm font-bold transition-all ${
-                  loadingPrice === option.priceId
+                className={`py-4 rounded-xl border text-sm font-bold transition-all ${loadingPrice === option.priceId
                     ? "bg-violet-500/20 border-violet-500/50 text-violet-300"
                     : "bg-white/5 border-white/10 text-white hover:bg-violet-500/10 hover:border-violet-500/30 hover:text-violet-300"
-                } disabled:opacity-50`}
+                  } disabled:opacity-50`}
               >
                 {loadingPrice === option.priceId ? "Redirecting..." : option.label}
               </button>
@@ -172,8 +165,22 @@ export default function ProfilePage() {
           <p className="text-white/30 text-[10px] mt-3 text-center">
             Securely processed by Stripe
           </p>
-          </div>
         </div>
+      </div>
     </AppShell>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-[#09090b] flex items-center justify-center">
+          <p className="text-white/40 text-sm">Loading...</p>
+        </main>
+      }
+    >
+      <ProfileContent />
+    </Suspense>
   );
 }

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
   --background: #ffffff;
@@ -28,6 +29,7 @@ body {
     opacity: 0;
     transform: translateY(24px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -35,28 +37,61 @@ body {
 }
 
 @keyframes floatA {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%       { transform: translate(30px, -40px) scale(1.05); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(30px, -40px) scale(1.05);
+  }
 }
 
 @keyframes floatB {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50%       { transform: translate(-25px, 35px) scale(0.95); }
+
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate(-25px, 35px) scale(0.95);
+  }
 }
 
 @keyframes gradientShift {
-  0%, 100% { background-position: 0% 50%; }
-  50%       { background-position: 100% 50%; }
+
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% center; }
-  100% { background-position:  200% center; }
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
 }
 
 @keyframes pulse-ring {
-  0%   { transform: scale(1);   opacity: 0.4; }
-  100% { transform: scale(1.6); opacity: 0; }
+  0% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
 }
 
 /* ── Animation utility classes ── */
@@ -84,14 +119,12 @@ body {
 }
 
 .btn-shimmer {
-  background: linear-gradient(
-    90deg,
-    #6366f1 0%,
-    #8b5cf6 30%,
-    #c4b5fd 50%,
-    #8b5cf6 70%,
-    #6366f1 100%
-  );
+  background: linear-gradient(90deg,
+      #6366f1 0%,
+      #8b5cf6 30%,
+      #c4b5fd 50%,
+      #8b5cf6 70%,
+      #6366f1 100%);
   background-size: 200% auto;
   animation: shimmer 3s linear infinite;
 }

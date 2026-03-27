@@ -20,8 +20,8 @@ interface HourBucket {
 }
 
 const VEHICLE_COLORS = {
-  Car:     "#818cf8",
-  Bike:    "#34d399",
+  Car: "#818cf8",
+  Bike: "#34d399",
   Scooter: "#fb923c",
   Parking: "#a78bfa",
 };

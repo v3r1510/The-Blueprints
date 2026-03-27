@@ -7,14 +7,14 @@ import { useSession, signOut } from "next-auth/react";
 
 const SideNavContext = createContext<{ collapsed: boolean; toggle: () => void }>({
   collapsed: false,
-  toggle: () => {},
+  toggle: () => { },
 });
 
 export function useSideNav() {
   return useContext(SideNavContext);
 }
 
-const NAV_ITEMS = [
+const RIDER_NAV_ITEMS = [
   {
     label: "Rent a Vehicle",
     href: "/dashboard",
@@ -48,6 +48,27 @@ const NAV_ITEMS = [
   },
 ];
 
+const OPERATOR_NAV_ITEMS = [
+  {
+    label: "Manage Fleet",
+    href: "/operator",
+    icon: (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 shrink-0">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <path d="M8 8h8M8 12h8M8 16h5" />
+      </svg>
+    ),
+  },
+];
+
+function getNavItems(role?: string) {
+  if (role === "operator") {
+    return OPERATOR_NAV_ITEMS;
+  }
+
+  return RIDER_NAV_ITEMS;
+}
+
 const BOTTOM_ITEMS = [
   {
     label: "Profile",
@@ -66,13 +87,11 @@ function NavLink({ href, icon, label, active, collapsed }: { href: string; icon:
     <Link
       href={href}
       title={collapsed ? label : undefined}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium transition-all ${
-        collapsed ? "justify-center" : ""
-      } ${
-        active
+      className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium transition-all ${collapsed ? "justify-center" : ""
+        } ${active
           ? "bg-violet-500/15 text-violet-300 border border-violet-500/20"
           : "text-white/50 hover:text-white/80 hover:bg-white/5 border border-transparent"
-      }`}
+        }`}
     >
       {icon}
       {!collapsed && <span className="truncate">{label}</span>}
@@ -103,21 +122,24 @@ export default function SideNav() {
   const pathname = usePathname();
   const { data: session } = useSession();
   const { collapsed, toggle } = useSideNav();
+  const navItems = getNavItems(session?.user?.role);
 
   return (
     <aside
-      className={`fixed top-0 left-0 h-screen bg-[#0a0a0e] border-r border-white/5 flex flex-col z-40 transition-all duration-300 ${
-        collapsed ? "w-16" : "w-56"
-      }`}
+      className={`fixed top-0 left-0 h-screen bg-[#0a0a0e] border-r border-white/5 flex flex-col z-40 transition-all duration-300 ${collapsed ? "w-16" : "w-56"
+        }`}
     >
       <div className={`flex items-center ${collapsed ? "justify-center py-5" : "justify-between px-5 py-6"}`}>
         {!collapsed && (
           <div className="min-w-0">
-            <p className="text-white/40 text-[9px] uppercase tracking-[0.2em]">
+            <p className="text-white/40 text-[10px] uppercase tracking-[0.18em]">
               The Blueprints
             </p>
-            <p className="text-white font-bold text-sm mt-0.5 truncate">
+            <p className="text-white font-bold text-base mt-0.5 truncate">
               {session?.user?.name?.split(" ")[0] ?? "Dashboard"}
+            </p>
+            <p className="text-xs italic tracking-wide text-violet-300/80 capitalize mt-0.5 truncate">
+              {session?.user?.role ?? "rider"}
             </p>
           </div>
         )}
@@ -134,17 +156,17 @@ export default function SideNav() {
 
       <nav className={`flex-1 ${collapsed ? "px-2" : "px-3"} space-y-1`}>
         {!collapsed && (
-          <p className="text-white/30 text-[9px] uppercase tracking-widest px-2 mb-2">
+          <p className="text-white/30 text-[11px] uppercase tracking-widest px-2 mb-2">
             Services
           </p>
         )}
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <NavLink
             key={item.href}
             href={item.href}
             icon={item.icon}
             label={item.label}
-            active={pathname === item.href}
+            active={item.href === "/operator" ? pathname.startsWith("/operator") : pathname === item.href}
             collapsed={collapsed}
           />
         ))}
@@ -165,9 +187,8 @@ export default function SideNav() {
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
           title={collapsed ? "Sign out" : undefined}
-          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-medium text-white/30 hover:text-red-400 hover:bg-red-500/5 transition-all w-full border border-transparent ${
-            collapsed ? "justify-center" : ""
-          }`}
+          className={`flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-medium text-white/30 hover:text-red-400 hover:bg-red-500/5 transition-all w-full border border-transparent ${collapsed ? "justify-center" : ""
+            }`}
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 shrink-0">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />

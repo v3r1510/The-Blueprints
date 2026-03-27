@@ -4,7 +4,7 @@ export class AnalyticsSystem implements IObserver {
   private static instance: AnalyticsSystem;
   private activeRentals: number = 0;
 
-  private constructor() {}
+  private constructor() { }
 
   static getInstance(): AnalyticsSystem {
     if (!AnalyticsSystem.instance) {
