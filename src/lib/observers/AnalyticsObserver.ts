@@ -15,9 +15,9 @@ export class AnalyticsSystem implements IObserver {
 
   update(data: VehicleStateChange): void {
     const wasActive =
-      data.previousState === "Reserved" || data.previousState === "InUse";
+      data.previousState === "Reserved" || data.previousState === "Active";
     const isActive =
-      data.newState === "Reserved" || data.newState === "InUse";
+      data.newState === "Reserved" || data.newState === "Active";
 
     if (!wasActive && isActive) this.activeRentals++;
     if (wasActive && !isActive) this.activeRentals = Math.max(0, this.activeRentals - 1);

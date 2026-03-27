@@ -16,12 +16,14 @@ interface HourBucket {
   Car: number;
   Bike: number;
   Scooter: number;
+  Parking: number;
 }
 
 const VEHICLE_COLORS = {
-  Car:     "#818cf8",
-  Bike:    "#34d399",
+  Car: "#818cf8",
+  Bike: "#34d399",
   Scooter: "#fb923c",
+  Parking: "#a78bfa",
 };
 
 const formatHour = (hour: number) => {
@@ -81,7 +83,7 @@ export default function UsageChart() {
   }, []);
 
   const hasAnyData = data.some(
-    (d) => d.Car > 0 || d.Bike > 0 || d.Scooter > 0,
+    (d) => d.Car > 0 || d.Bike > 0 || d.Scooter > 0 || d.Parking > 0,
   );
 
   return (

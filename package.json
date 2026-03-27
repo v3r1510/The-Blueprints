@@ -11,6 +11,8 @@
   "dependencies": {
     "@types/leaflet": "^1.9.21",
     "bcryptjs": "^3.0.3",
+    "gtfs-realtime-bindings": "^1.1.1",
+    "jszip": "^3.10.1",
     "leaflet": "^1.9.4",
     "mongoose": "^9.3.0",
     "next": "16.1.6",

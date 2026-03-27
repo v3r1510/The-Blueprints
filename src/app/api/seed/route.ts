@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Vehicle from "@/models/Vehicle";
-import Trip from "@/models/Trip";
 import { VehicleType, ResourceState } from "@/models/Vehicle";
+import ParkingSpot from "@/models/ParkingSpot";
+import { ParkingResourceState } from "@/models/ParkingSpot";
 import { getFactory } from "@/lib/vehicle-factory";
+import { createParkingSpotData } from "@/lib/parking-factory";
 
 const STATIONS: Record<string, { name: string; coordinates: [number, number] }> = {
   pda: { name: "Station Place-des-Arts", coordinates: [-73.568, 45.508] },
@@ -60,14 +62,29 @@ const SEED_MANIFEST: SeedEntry[] = [
   { type: "Scooter", station: "longueuil", batteryLevel: 95 },
 ];
 
+interface ParkingSeedEntry {
+  station: string;
+  lotNumber: string;
+  state?: ParkingResourceState;
+  flatRate?: number;
+}
+
+const PARKING_MANIFEST: ParkingSeedEntry[] = [
+  { station: "pda", lotNumber: "P-A12", flatRate: 4.5 },
+  { station: "pda", lotNumber: "P-B03", flatRate: 6 },
+  { station: "mcgill", lotNumber: "M-101", flatRate: 5 },
+  { station: "berri", lotNumber: "B-7", flatRate: 4 },
+  { station: "berri", lotNumber: "B-8", state: "Reserved", flatRate: 5.5 },
+  { station: "royal", lotNumber: "R-22", flatRate: 3.5 },
+  { station: "concordia", lotNumber: "C-55", flatRate: 5 },
+  { station: "longueuil", lotNumber: "L-09", flatRate: 4 },
+];
+
 export async function GET() {
   try {
     await connectDB();
-
-    // Clear both collections — stale "Reserved" trips are the root cause
-    // of inflated active-rental counts across test sessions.
     await Vehicle.deleteMany({});
-    await Trip.deleteMany({});
+    await ParkingSpot.deleteMany({});
 
     const vehicles = SEED_MANIFEST.map((entry) => {
       const station = STATIONS[entry.station];
@@ -83,9 +100,23 @@ export async function GET() {
 
     await Vehicle.insertMany(vehicles);
 
+    const parkingDocs = PARKING_MANIFEST.map((entry) => {
+      const station = STATIONS[entry.station];
+      return createParkingSpotData({
+        zone: station.name,
+        lotNumber: entry.lotNumber,
+        coordinates: station.coordinates,
+        state: entry.state,
+        flatRate: entry.flatRate,
+      });
+    });
+
+    await ParkingSpot.insertMany(parkingDocs);
+
     return NextResponse.json({
-      message: `Success! ${vehicles.length} vehicles added and all trips cleared.`,
+      message: `Success! ${vehicles.length} vehicles and ${parkingDocs.length} parking spots added to your DB.`,
       count: vehicles.length,
+      parkingCount: parkingDocs.length,
     });
   } catch (_err) {
     console.error("[SEED ERROR]", _err);

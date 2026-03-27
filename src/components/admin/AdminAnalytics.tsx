@@ -18,12 +18,22 @@ interface PaymentStats {
   total: number;
 }
 
+interface RevenueStats {
+  vehicleTrips: number;
+  parkingTrips: number;
+  totalRevenue: number;
+  tripCount: number;
+}
+
 export default function AdminAnalytics() {
   const [activeRentals, setActiveRentals] = useState<number | null>(null);
   const [loadingRentals, setLoadingRentals] = useState(true);
 
   const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null);
   const [loadingPayments, setLoadingPayments] = useState(true);
+
+  const [revenueStats, setRevenueStats] = useState<RevenueStats | null>(null);
+  const [loadingRevenue, setLoadingRevenue] = useState(true);
 
   useEffect(() => {
     const fetch_ = () => {
@@ -53,7 +63,21 @@ export default function AdminAnalytics() {
     return () => clearInterval(interval);
   }, []);
 
-  // ── Add future metrics here ────────────────────────────────────────────────
+  useEffect(() => {
+    const fetch_ = () => {
+      setLoadingRevenue(true);
+      fetch("/api/analytics/revenue-today")
+        .then((r) => r.json())
+        .then((data) => setRevenueStats(data))
+        .catch(() => setRevenueStats(null))
+        .finally(() => setLoadingRevenue(false));
+    };
+    fetch_();
+    const interval = setInterval(fetch_, 10_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Add future metrics here -----------
   const stats: StatCard[] = [
     {
       label: "Active Rentals",
@@ -69,9 +93,19 @@ export default function AdminAnalytics() {
       icon: "💳",
       accent: "border-blue-500/30 text-blue-400",
       description: paymentStats
-        ? `${paymentStats.successCount} completed · ${paymentStats.failureCount} cancelled`
-        : "Completed vs cancelled payments",
+        ? `${paymentStats.successCount} completed · ${paymentStats.failureCount} rejected`
+        : "Completed vs rejected payments",
       loading: loadingPayments,
+    },
+    {
+      label: "Revenue Today",
+      value: revenueStats !== null ? `$${revenueStats.totalRevenue.toFixed(2)}` : null,
+      icon: "💰",
+      accent: "border-amber-500/30 text-amber-400",
+      description: revenueStats
+        ? `🚲 ${revenueStats.vehicleTrips} rental${revenueStats.vehicleTrips !== 1 ? "s" : ""} · 🅿️ ${revenueStats.parkingTrips} parking`
+        : "Vehicle rentals + parking sessions",
+      loading: loadingRevenue,
     },
   ];
   // ---------------
