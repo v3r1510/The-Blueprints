@@ -1,125 +1,194 @@
 import { NextResponse } from "next/server";
 import { connectDB } from "@/lib/mongodb";
 import Vehicle from "@/models/Vehicle";
-import { VehicleType, ResourceState } from "@/models/Vehicle";
-import ParkingSpot from "@/models/ParkingSpot";
-import { ParkingResourceState } from "@/models/ParkingSpot";
-import { getFactory } from "@/lib/vehicle-factory";
-import { createParkingSpotData } from "@/lib/parking-factory";
 
-const STATIONS: Record<string, { name: string; coordinates: [number, number] }> = {
-  pda: { name: "Station Place-des-Arts", coordinates: [-73.568, 45.508] },
-  mcgill: { name: "Station McGill", coordinates: [-73.577, 45.504] },
-  berri: { name: "Station Berri-UQAM", coordinates: [-73.56, 45.515] },
-  royal: { name: "Station Mont-Royal", coordinates: [-73.582, 45.523] },
-  concordia: { name: "Station Concordia", coordinates: [-73.579, 45.497] },
-  longueuil: { name: "Station Longueuil", coordinates: [-73.522, 45.525] },
-};
-
-interface SeedEntry {
-  type: VehicleType;
-  station: string;
-  state?: ResourceState;
-  batteryLevel?: number;
-}
-
-const SEED_MANIFEST: SeedEntry[] = [
-  // Station Place-des-Arts
-  { type: "Scooter", station: "pda", batteryLevel: 85 },
-  { type: "Scooter", station: "pda", batteryLevel: 42 },
-  { type: "Car", station: "pda", batteryLevel: 60 },
-  { type: "Bike", station: "pda", state: "Reserved", batteryLevel: 100 },
-  { type: "Scooter", station: "pda", batteryLevel: 12 },
-
-  // Station McGill
-  { type: "Bike", station: "mcgill", batteryLevel: 95 },
-  { type: "Bike", station: "mcgill", batteryLevel: 88 },
-  { type: "Scooter", station: "mcgill", batteryLevel: 100 },
-  { type: "Car", station: "mcgill", state: "Maintenance", batteryLevel: 5 },
-
-  // Station Berri-UQAM
-  { type: "Car", station: "berri", batteryLevel: 75 },
-  { type: "Car", station: "berri", batteryLevel: 30 },
-  { type: "Bike", station: "berri", batteryLevel: 50 },
-  { type: "Scooter", station: "berri", state: "InUse", batteryLevel: 65 },
-  { type: "Bike", station: "berri", batteryLevel: 90 },
-
-  // Station Mont-Royal
-  { type: "Scooter", station: "royal", batteryLevel: 100 },
-  { type: "Scooter", station: "royal", batteryLevel: 82 },
-  { type: "Bike", station: "royal", batteryLevel: 15 },
-  { type: "Car", station: "royal", state: "Reserved", batteryLevel: 45 },
-
-  // Station Concordia
-  { type: "Bike", station: "concordia", batteryLevel: 100 },
-  { type: "Bike", station: "concordia", batteryLevel: 70 },
-  { type: "Scooter", station: "concordia", batteryLevel: 25 },
-  { type: "Car", station: "concordia", batteryLevel: 90 },
-
-  // Station Longueuil
-  { type: "Car", station: "longueuil", batteryLevel: 80 },
-  { type: "Bike", station: "longueuil", batteryLevel: 55 },
-  { type: "Scooter", station: "longueuil", batteryLevel: 95 },
-];
-
-interface ParkingSeedEntry {
-  station: string;
-  lotNumber: string;
-  state?: ParkingResourceState;
-  flatRate?: number;
-}
-
-const PARKING_MANIFEST: ParkingSeedEntry[] = [
-  { station: "pda", lotNumber: "P-A12", flatRate: 4.5 },
-  { station: "pda", lotNumber: "P-B03", flatRate: 6 },
-  { station: "mcgill", lotNumber: "M-101", flatRate: 5 },
-  { station: "berri", lotNumber: "B-7", flatRate: 4 },
-  { station: "berri", lotNumber: "B-8", state: "Reserved", flatRate: 5.5 },
-  { station: "royal", lotNumber: "R-22", flatRate: 3.5 },
-  { station: "concordia", lotNumber: "C-55", flatRate: 5 },
-  { station: "longueuil", lotNumber: "L-09", flatRate: 4 },
-];
+//slightly scatters coordinates to avoid perfect overlap on the map when multiple vehicles are at the same station
+const scatter = (coord: number, variance = 0.001) =>
+  coord + (Math.random() * variance * 2 - variance);
 
 export async function GET() {
   try {
     await connectDB();
     await Vehicle.deleteMany({});
-    await ParkingSpot.deleteMany({});
 
-    const vehicles = SEED_MANIFEST.map((entry) => {
-      const station = STATIONS[entry.station];
-      const factory = getFactory(entry.type);
+    const stations = {
+      pda: [-73.5685, 45.5085], // Place-des-Arts
+      mcgill: [-73.5745, 45.504], // McGill
+      berri: [-73.5601, 45.5153], // Berri-UQAM
+      royal: [-73.5816, 45.5242], // Mont-Royal
+      concordia: [-73.579, 45.4954], // Concordia
+      longueuil: [-73.5222, 45.5247], // Longueuil
+    };
 
-      return factory.create({
-        zone: station.name,
-        coordinates: station.coordinates,
-        state: entry.state,
-        batteryLevel: entry.batteryLevel,
-      });
-    });
+    const vehicles = [
+      // --- Station Place-des-Arts ---
+      {
+        type: "Scooter",
+        zone: "Station Place-des-Arts",
+        state: "Available",
+        batteryLevel: 85,
+        location: {
+          type: "Point",
+          coordinates: [scatter(stations.pda[0]), scatter(stations.pda[1])],
+        },
+      },
+      {
+        type: "Car",
+        zone: "Station Place-des-Arts",
+        state: "Available",
+        batteryLevel: 60,
+        location: {
+          type: "Point",
+          coordinates: [scatter(stations.pda[0]), scatter(stations.pda[1])],
+        },
+      },
+      {
+        type: "Bike",
+        zone: "Station Place-des-Arts",
+        state: "Reserved",
+        batteryLevel: 100,
+        location: {
+          type: "Point",
+          coordinates: [scatter(stations.pda[0]), scatter(stations.pda[1])],
+        },
+      },
+
+      // --- Station McGill ---
+      {
+        type: "Bike",
+        zone: "Station McGill",
+        state: "Available",
+        batteryLevel: 95,
+        location: {
+          type: "Point",
+          coordinates: [
+            scatter(stations.mcgill[0]),
+            scatter(stations.mcgill[1]),
+          ],
+        },
+      },
+      {
+        type: "Scooter",
+        zone: "Station McGill",
+        state: "Available",
+        batteryLevel: 100,
+        location: {
+          type: "Point",
+          coordinates: [
+            scatter(stations.mcgill[0]),
+            scatter(stations.mcgill[1]),
+          ],
+        },
+      },
+
+      // --- Station Berri-UQAM ---
+      {
+        type: "Car",
+        zone: "Station Berri-UQAM",
+        state: "Available",
+        batteryLevel: 75,
+        location: {
+          type: "Point",
+          coordinates: [scatter(stations.berri[0]), scatter(stations.berri[1])],
+        },
+      },
+      {
+        type: "Scooter",
+        zone: "Station Berri-UQAM",
+        state: "InUse",
+        batteryLevel: 65,
+        location: {
+          type: "Point",
+          coordinates: [scatter(stations.berri[0]), scatter(stations.berri[1])],
+        },
+      },
+
+      // --- Station Mont-Royal ---
+      {
+        type: "Scooter",
+        zone: "Station Mont-Royal",
+        state: "Available",
+        batteryLevel: 100,
+        location: {
+          type: "Point",
+          coordinates: [scatter(stations.royal[0]), scatter(stations.royal[1])],
+        },
+      },
+      {
+        type: "Car",
+        zone: "Station Mont-Royal",
+        state: "Reserved",
+        batteryLevel: 45,
+        location: {
+          type: "Point",
+          coordinates: [scatter(stations.royal[0]), scatter(stations.royal[1])],
+        },
+      },
+
+      // --- Station Concordia ---
+      {
+        type: "Bike",
+        zone: "Station Concordia",
+        state: "Available",
+        batteryLevel: 100,
+        location: {
+          type: "Point",
+          coordinates: [
+            scatter(stations.concordia[0]),
+            scatter(stations.concordia[1]),
+          ],
+        },
+      },
+      {
+        type: "Car",
+        zone: "Station Concordia",
+        state: "Available",
+        batteryLevel: 90,
+        location: {
+          type: "Point",
+          coordinates: [
+            scatter(stations.concordia[0]),
+            scatter(stations.concordia[1]),
+          ],
+        },
+      },
+
+      // --- Station Longueuil ---
+      {
+        type: "Car",
+        zone: "Station Longueuil",
+        state: "Available",
+        batteryLevel: 80,
+        location: {
+          type: "Point",
+          coordinates: [
+            scatter(stations.longueuil[0]),
+            scatter(stations.longueuil[1]),
+          ],
+        },
+      },
+      {
+        type: "Scooter",
+        zone: "Station Longueuil",
+        state: "Available",
+        batteryLevel: 95,
+        location: {
+          type: "Point",
+          coordinates: [
+            scatter(stations.longueuil[0]),
+            scatter(stations.longueuil[1]),
+          ],
+        },
+      },
+    ];
 
     await Vehicle.insertMany(vehicles);
 
-    const parkingDocs = PARKING_MANIFEST.map((entry) => {
-      const station = STATIONS[entry.station];
-      return createParkingSpotData({
-        zone: station.name,
-        lotNumber: entry.lotNumber,
-        coordinates: station.coordinates,
-        state: entry.state,
-        flatRate: entry.flatRate,
-      });
-    });
-
-    await ParkingSpot.insertMany(parkingDocs);
-
     return NextResponse.json({
-      message: `Success! ${vehicles.length} vehicles and ${parkingDocs.length} parking spots added to your DB.`,
-      count: vehicles.length,
-      parkingCount: parkingDocs.length,
+      message: "Success! Vehicles seeded with accurate Montreal coordinates.",
     });
-  } catch (_err) {
-    console.error("[SEED ERROR]", _err);
+  } catch (err) {
+    console.error("[SEED ERROR]", err);
     return NextResponse.json({ error: "Seed failed" }, { status: 500 });
   }
 }
