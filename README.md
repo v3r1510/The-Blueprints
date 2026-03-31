@@ -3,13 +3,13 @@
 The Smart Urban Mobility Management System (SUMMS) is a unified platform designed to address fragmented urban mobility by combining shared mobility options, parking infrastructure, and public transportation into a single digital interface. By centralizing these services, SUMMS simplifies trip planning for commuters and encourages sustainable transportation, while also providing city administrators with a centralized view of system performance and resource allocation.
 
 
-| Name | ID |
-| :--- | :--- |
-| Valeria Rosca | 40297230 |
-| Tiffany Andriamiharimanana | 40283866 |
-| Mridul Mridul | 40279215 |
-| Mijan Ullah | 40287584 |
-| Yassine Hajou | 40284609 |
+| Name | ID | Github Username |
+| :--- | :--- | :--- |
+| Valeria Rosca | 40297230 | v3r1510 |
+| Tiffany Andriamiharimanana | 40283866 | tiffsoa |
+| Mridul Mridul | 40279215 | mrid105 |
+| Mijan Ullah | 40287584 | mijanullah12 |
+| Yassine Hajou | 40284609 | yassinehajou |
 ---
 
 ## Getting Started
