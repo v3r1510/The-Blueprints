@@ -13,18 +13,28 @@ export async function GET() {
   try {
     await connectDB();
 
-    // Build 24-hour buckets for today (success + failure per hour)
+    // Build 24-hour buckets for today using Toronto local time (same as revenue-today)
+    const TZ = "America/Toronto";
     const now = new Date();
-    const startOfDay = new Date(now);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
+    const localDateStr = now.toLocaleDateString("en-CA", { timeZone: TZ });
+    const getOffsetMs = (date: Date) => {
+      const utc = new Date(date.toLocaleString("en-US", { timeZone: "UTC" }));
+      const local = new Date(date.toLocaleString("en-US", { timeZone: TZ }));
+      return utc.getTime() - local.getTime();
+    };
+    const startOfDay = new Date(`${localDateStr}T00:00:00`);
+    const endOfDay = new Date(`${localDateStr}T23:59:59.999`);
+    startOfDay.setTime(startOfDay.getTime() + getOffsetMs(startOfDay));
+    endOfDay.setTime(endOfDay.getTime() + getOffsetMs(endOfDay));
 
     const raw = await GatewayEvent.aggregate([
       { $match: { createdAt: { $gte: startOfDay, $lte: endOfDay } } },
       {
         $group: {
-          _id: { hour: { $hour: "$createdAt" }, status: "$status" },
+          _id: {
+            hour: { $hour: { date: "$createdAt", timezone: "America/Toronto" } },
+            status: "$status",
+          },
           count: { $sum: 1 },
         },
       },
