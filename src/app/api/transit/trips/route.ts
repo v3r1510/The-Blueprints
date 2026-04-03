@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import GtfsRealtimeBindings from "gtfs-realtime-bindings";
+import { GatewayAnalyticsObserver } from "@/lib/observers/GatewayAnalyticsObserver";
 
 const { FeedMessage } = GtfsRealtimeBindings.transit_realtime;
 
@@ -28,6 +29,9 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const routeFilter = searchParams.get("route");
 
+  const gateway = GatewayAnalyticsObserver.getInstance();
+  const t0 = Date.now();
+
   try {
     const res = await fetch(STM_TRIPS_URL, {
       headers: { apikey: STM_API_KEY },
@@ -35,6 +39,7 @@ export async function GET(req: Request) {
     });
 
     if (!res.ok) {
+      gateway.onGatewayCall({ service: "STM_TRIPS", status: "failure", latencyMs: Date.now() - t0, httpStatus: res.status, timestamp: new Date() });
       return NextResponse.json(
         { error: `STM API returned ${res.status}` },
         { status: 502 }
@@ -69,6 +74,7 @@ export async function GET(req: Request) {
         };
       });
 
+    gateway.onGatewayCall({ service: "STM_TRIPS", status: "success", latencyMs: Date.now() - t0, httpStatus: 200, timestamp: new Date() });
     return NextResponse.json({
       timestamp: Date.now(),
       totalTrips: trips.length,
@@ -76,6 +82,7 @@ export async function GET(req: Request) {
     });
   } catch (err) {
     console.error("Transit trips API error:", err);
+    gateway.onGatewayCall({ service: "STM_TRIPS", status: "failure", latencyMs: Date.now() - t0, error: String(err), timestamp: new Date() });
     return NextResponse.json(
       { error: "Failed to fetch trip updates" },
       { status: 500 }
