@@ -5,7 +5,9 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import AppShell from "@/components/AppShell";
 import VehicleDiscovery from "../rider/VehicleDiscovery";
-import AdminAnalytics from "@/components/admin/AdminAnalytics"; // ← new
+import AdminAnalytics from "@/components/admin/AdminAnalytics";
+import GatewayHealthCard from "@/components/admin/GatewayHealthCard";
+import GatewayVolumeChart from "@/components/admin/GatewayVolumeChart";
 
 interface UserRow {
   _id: string;
@@ -123,6 +125,14 @@ export default function DashboardPage() {
           <div>
             {/* ── Observer-powered analytics cards ── */}
             <AdminAnalytics />
+
+            {/* ── Gateway analytics ── */}
+            <h2 className="text-white/70 text-xs uppercase tracking-widest mb-4">
+              Gateway Analytics
+            </h2>
+            <GatewayHealthCard />
+            <GatewayVolumeChart />
+
             <h2 className="text-white/70 text-xs uppercase tracking-widest mb-4">
               All Users
             </h2>
