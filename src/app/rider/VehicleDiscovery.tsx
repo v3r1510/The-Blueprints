@@ -54,6 +54,7 @@ export default function VehicleDiscovery() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [stations, setStations] = useState<StationStatus[]>([]);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [vehicleRating, setVehicleRating] = useState<{ average: number; count: number } | null>(null);
 
   const showToast = useCallback((type: Toast["type"], message: string, action?: Toast["action"]) => {
     const id = Date.now();
@@ -113,6 +114,17 @@ export default function VehicleDiscovery() {
     }
     return () => clearInterval(interval);
   }, [activeTrip]);
+
+  useEffect(() => {
+    if (!selectedVehicle) {
+      setVehicleRating(null);
+      return;
+    }
+    fetch(`/api/ratings/vehicle/${selectedVehicle._id}`, { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data) setVehicleRating({ average: data.average, count: data.count }); })
+      .catch(() => setVehicleRating(null));
+  }, [selectedVehicle]);
 
   const formatTime = (totalSeconds: number) => {
     const m = Math.floor(totalSeconds / 60)
@@ -401,6 +413,27 @@ export default function VehicleDiscovery() {
                 {selectedVehicle.batteryLevel}%
               </span>
             </div>
+
+            {vehicleRating && vehicleRating.count > 0 && (
+              <div className="flex items-center gap-2 mb-6">
+                <div className="flex gap-0.5">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <span
+                      key={i}
+                      className={`text-sm ${i <= Math.round(vehicleRating.average) ? "text-amber-400" : "text-white/10"}`}
+                    >
+                      ★
+                    </span>
+                  ))}
+                </div>
+                <span className="text-white/50 text-[11px] font-mono">
+                  {vehicleRating.average}
+                </span>
+                <span className="text-white/30 text-[10px]">
+                  ({vehicleRating.count} {vehicleRating.count === 1 ? "review" : "reviews"})
+                </span>
+              </div>
+            )}
 
             <button
               onClick={() => setShowConfirmModal(true)}
