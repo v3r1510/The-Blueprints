@@ -7,6 +7,17 @@ import AppShell from "@/components/AppShell";
 type VehicleType = "Car" | "Bike" | "Scooter";
 type VehicleState = "Available" | "Reserved" | "InUse" | "Maintenance";
 
+interface VehicleRating {
+  vehicleId: string;
+  type: string;
+  zone: string;
+  average: number;
+  count: number;
+  latestComment: string | null;
+  latestStars: number | null;
+  latestDate: string | null;
+}
+
 interface VehicleRow {
   _id: string;
   type: VehicleType;
@@ -54,6 +65,7 @@ export default function OperatorPage() {
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [ratings, setRatings] = useState<VehicleRating[]>([]);
 
   const [createForm, setCreateForm] = useState({
     type: "Scooter" as VehicleType,
@@ -130,8 +142,16 @@ export default function OperatorPage() {
     }
   };
 
+  const loadRatings = () => {
+    fetch("/api/operator/ratings", { credentials: "include" })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setRatings(data))
+      .catch(() => setRatings([]));
+  };
+
   useEffect(() => {
     loadVehicles();
+    loadRatings();
   }, []);
 
   const handleCreate = async (e: FormEvent) => {
@@ -504,6 +524,55 @@ export default function OperatorPage() {
               </tbody>
             </table>
           </div>
+          {ratings.length > 0 && (
+            <div className="mt-8 rounded-xl border border-white/10 bg-white/5 p-6">
+              <h2 className="text-white/70 text-[10px] uppercase tracking-widest mb-4">
+                Fleet Ratings
+              </h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {ratings.map((r) => (
+                  <div
+                    key={r.vehicleId}
+                    className="rounded-lg border border-white/10 bg-black/20 p-4 space-y-3"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-semibold text-sm">{r.type}</p>
+                        <p className="text-white/40 text-[11px]">{r.zone}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map((i) => (
+                            <span
+                              key={i}
+                              className={`text-sm ${i <= Math.round(r.average) ? "text-amber-400" : "text-white/10"}`}
+                            >
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <p className="text-white/50 text-[10px] font-mono mt-0.5">
+                          {r.average} avg · {r.count} {r.count === 1 ? "review" : "reviews"}
+                        </p>
+                      </div>
+                    </div>
+
+                    {r.latestComment && (
+                      <div className="rounded-md bg-white/5 px-3 py-2 border border-white/5">
+                        <p className="text-white/60 text-xs italic leading-relaxed">
+                          &ldquo;{r.latestComment}&rdquo;
+                        </p>
+                        <p className="text-white/30 text-[10px] mt-1">
+                          {r.latestStars}★ · {r.latestDate ? new Date(r.latestDate).toLocaleDateString() : ""}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </AppShell>
