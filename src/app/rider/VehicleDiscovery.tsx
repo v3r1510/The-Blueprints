@@ -6,6 +6,7 @@ import { getStrategyForVehicle } from "@/lib/pricing";
 import Link from "next/link";
 import MobilityMap from "./MobilityMap";
 import ReservationModal from "./ReservationModal";
+import StarRating from "./StarRating";
 
 interface StationStatus {
   name: string;
@@ -52,6 +53,7 @@ export default function VehicleDiscovery() {
   const [isEndingRental, setIsEndingRental] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [stations, setStations] = useState<StationStatus[]>([]);
+  const [ratingSubmitted, setRatingSubmitted] = useState(false);
 
   const showToast = useCallback((type: Toast["type"], message: string, action?: Toast["action"]) => {
     const id = Date.now();
@@ -320,11 +322,19 @@ export default function VehicleDiscovery() {
               </div>
             )}
 
+            {activeTrip.endTime && !ratingSubmitted && (
+              <StarRating
+                tripId={activeTrip.tripId}
+                onSubmitted={() => setRatingSubmitted(true)}
+              />
+            )}
+
             {activeTrip.endTime ? (
               <button
                 onClick={() => {
                   refreshVehicles();
                   setActiveTrip(null);
+                  setRatingSubmitted(false);
                 }}
                 className="w-full py-3 rounded-lg border border-white/10 text-white/70 text-[11px] font-bold hover:bg-white/5 transition-all uppercase tracking-widest"
               >
