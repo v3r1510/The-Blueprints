@@ -54,7 +54,11 @@ export default function VehicleDiscovery() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [stations, setStations] = useState<StationStatus[]>([]);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
-  const [vehicleRating, setVehicleRating] = useState<{ average: number; count: number } | null>(null);
+  const [vehicleRating, setVehicleRating] = useState<{
+    average: number;
+    count: number;
+    recent: { stars: number; comment?: string; createdAt: string }[];
+  } | null>(null);
 
   const showToast = useCallback((type: Toast["type"], message: string, action?: Toast["action"]) => {
     const id = Date.now();
@@ -122,7 +126,9 @@ export default function VehicleDiscovery() {
     }
     fetch(`/api/ratings/vehicle/${selectedVehicle._id}`, { credentials: "include" })
       .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (data) setVehicleRating({ average: data.average, count: data.count }); })
+      .then((data) => {
+        if (data) setVehicleRating({ average: data.average, count: data.count, recent: data.recent ?? [] });
+      })
       .catch(() => setVehicleRating(null));
   }, [selectedVehicle]);
 
@@ -414,24 +420,53 @@ export default function VehicleDiscovery() {
               </span>
             </div>
 
-            {vehicleRating && vehicleRating.count > 0 && (
-              <div className="flex items-center gap-2 mb-6">
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <span
-                      key={i}
-                      className={`text-sm ${i <= Math.round(vehicleRating.average) ? "text-amber-400" : "text-white/10"}`}
-                    >
-                      ★
-                    </span>
-                  ))}
-                </div>
-                <span className="text-white/50 text-[11px] font-mono">
-                  {vehicleRating.average}
-                </span>
-                <span className="text-white/30 text-[10px]">
-                  ({vehicleRating.count} {vehicleRating.count === 1 ? "review" : "reviews"})
-                </span>
+            {vehicleRating && (
+              <div className="mb-6 space-y-2">
+                {vehicleRating.count > 0 ? (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-0.5">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <span
+                            key={i}
+                            className={`text-sm ${i <= Math.round(vehicleRating.average) ? "text-amber-400" : "text-white/10"}`}
+                          >
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <span className="text-white/50 text-[11px] font-mono">
+                        {vehicleRating.average}
+                      </span>
+                      <span className="text-white/30 text-[10px]">
+                        ({vehicleRating.count} {vehicleRating.count === 1 ? "review" : "reviews"})
+                      </span>
+                    </div>
+                    {vehicleRating.recent.length > 0 && (
+                      <div className="space-y-1.5 max-h-40 overflow-y-auto">
+                        {vehicleRating.recent.map((r, idx) => (
+                          <div key={idx} className="rounded-md bg-black/30 border border-white/5 px-3 py-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="flex gap-0.5">
+                                {[1, 2, 3, 4, 5].map((i) => (
+                                  <span key={i} className={`text-[9px] ${i <= r.stars ? "text-amber-400" : "text-white/10"}`}>★</span>
+                                ))}
+                              </span>
+                              <span className="text-white/20 text-[9px]">
+                                {new Date(r.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            {r.comment && (
+                              <p className="text-white/50 text-[11px] italic mt-1">&ldquo;{r.comment}&rdquo;</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-white/25 text-[11px]">No reviews yet</p>
+                )}
               </div>
             )}
 
