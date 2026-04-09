@@ -18,15 +18,24 @@ interface UserRow {
 }
 
 const ROLE_BADGE: Record<string, string> = {
-  admin:    "bg-violet-500/20 text-violet-300 border-violet-500/30",
+  admin: "bg-violet-500/20 text-violet-300 border-violet-500/30",
   operator: "bg-blue-500/20 text-blue-300 border-blue-500/30",
-  rider:    "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+  rider: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
 };
 
 const ROLE_INFO: Record<string, { icon: string; description: string }> = {
-  rider:    { icon: "🚲", description: "Search and reserve mobility services across Montréal." },
-  operator: { icon: "🚌", description: "Manage your fleet and update vehicle statuses." },
-  admin:    { icon: "🛡️", description: "Full platform access — users, analytics, and settings." },
+  rider: {
+    icon: "🚲",
+    description: "Search and reserve mobility services across Montréal.",
+  },
+  operator: {
+    icon: "🚌",
+    description: "Manage your fleet and update vehicle statuses.",
+  },
+  admin: {
+    icon: "🛡️",
+    description: "Full platform access — users, analytics, and settings.",
+  },
 };
 
 export default function DashboardPage() {
@@ -67,15 +76,15 @@ export default function DashboardPage() {
       {/* Background orbs */}
       <div
         className="animate-float-a pointer-events-none absolute -top-32 -left-32 w-125 h-125 rounded-full opacity-10"
-          style={{
-            background: "radial-gradient(circle, #6366f1 0%, transparent 70%)",
-          }}
+        style={{
+          background: "radial-gradient(circle, #6366f1 0%, transparent 70%)",
+        }}
       />
       <div
         className="animate-float-b pointer-events-none absolute -bottom-40 -right-24 w-150 h-150 rounded-full opacity-10"
-          style={{
-            background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
-          }}
+        style={{
+          background: "radial-gradient(circle, #8b5cf6 0%, transparent 70%)",
+        }}
       />
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 py-10">
